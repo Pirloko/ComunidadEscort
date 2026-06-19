@@ -1,0 +1,12 @@
+-- ============================================================
+-- 00009b_rls_fases_3_7.sql  (ARCHIVO OBSOLETO)
+-- ⚠️ NO EJECUTAR ESTE ARCHIVO COMPLETO
+--
+-- Usar en su lugar los archivos por fase:
+--   Fase 3:  00009c_rls_fase3_forum.sql
+--   Fase 4:  00009d_rls_fase4_alerts.sql
+--   Fase 5:  00009e_rls_fase5_resources.sql
+--   Fase 6:  00009f_rls_fase6_chat.sql
+--   Fase 7:  00009g_rls_fase7_notifications.sql
+--   Fase 10: 00009h_rls_fase10_bookmarks.sql
+-- ============================================================

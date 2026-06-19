@@ -1,0 +1,174 @@
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import {
+  ArrowLeft,
+  MapPin,
+  Phone,
+  Globe,
+  Pencil,
+  Trash2,
+  BadgeCheck,
+} from 'lucide-react'
+import { ErrorState } from '@/components/shared/ErrorState'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { ResourceCategoryBadge } from '@/features/resources/components/ResourceCategoryBadge'
+import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
+import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { formatRelativeTime } from '@/lib/format'
+import { resourceService } from '@/services/resource.service'
+
+export function ResourceDetailPage() {
+  const { resourceId } = useParams<{ resourceId: string }>()
+  const navigate = useNavigate()
+  const { user, profile } = useAuth()
+
+  const { data: resource, isLoading, isError, refetch } = useQuery({
+    queryKey: ['resource', resourceId],
+    queryFn: () => resourceService.getResourceById(resourceId!),
+    enabled: !!resourceId,
+  })
+
+  const isAuthor = user?.id === resource?.author_id
+  const isMod = profile?.role === 'moderator' || profile?.role === 'admin'
+  const canView =
+    (resource?.status === 'aprobada' && resource?.is_active) || isAuthor || isMod
+
+  const handleDelete = async () => {
+    if (!resource || !confirm('¿Eliminar este recurso?')) return
+    await resourceService.deleteResource(resource.id)
+    navigate('/resources')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
+    )
+  }
+
+  if (isError || !resource || !canView) {
+    return <ErrorState title="Recurso no encontrado" onRetry={() => refetch()} />
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-6">
+      <Link
+        to="/resources"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Volver al directorio
+      </Link>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <ResourceCategoryBadge category={resource.category} />
+                {(isAuthor || isMod) && <AlertStatusBadge status={resource.status} />}
+                {resource.status === 'aprobada' && resource.is_verified && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    Verificado por la comunidad
+                  </span>
+                )}
+              </div>
+              <h1 className="mt-3 text-2xl font-bold">{resource.name}</h1>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {resource.city && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {resource.city.name}
+                  </span>
+                )}
+                <span>·</span>
+                <span>Agregado {formatRelativeTime(resource.created_at)}</span>
+              </div>
+            </div>
+            <BookmarkButton itemType="resource" itemId={resource.id} size="sm" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {resource.description && (
+            <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+              {resource.description}
+            </p>
+          )}
+
+          {resource.status === 'pendiente' && isAuthor && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950/30">
+              Tu recurso está <strong>pendiente de revisión</strong>. Te notificaremos cuando sea
+              aprobado o rechazado.
+            </div>
+          )}
+
+          {resource.status === 'rechazada' && isAuthor && resource.rejection_reason && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm dark:border-red-900 dark:bg-red-950/30">
+              <strong>Motivo del rechazo:</strong> {resource.rejection_reason}
+            </div>
+          )}
+
+          {resource.status === 'aprobada' && (
+            <div className="space-y-2 rounded-lg bg-muted/50 p-4">
+              {resource.phone && (
+                <a
+                  href={`tel:${resource.phone}`}
+                  className="flex items-center gap-2 text-sm hover:text-accent"
+                >
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  {resource.phone}
+                </a>
+              )}
+              {resource.address && (
+                <p className="flex items-start gap-2 text-sm">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  {resource.address}
+                </p>
+              )}
+              {resource.website && (
+                <a
+                  href={resource.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-accent hover:underline"
+                >
+                  <Globe className="h-4 w-4" />
+                  {resource.website}
+                </a>
+              )}
+            </div>
+          )}
+
+          {resource.author && resource.status === 'aprobada' && (
+            <p className="text-sm text-muted-foreground">
+              Recomendado por @{resource.author.alias}
+            </p>
+          )}
+
+          {(isAuthor || isMod) && (
+            <div className="flex gap-2 border-t pt-4">
+              {isAuthor && resource.status === 'pendiente' && (
+                <Link to={`/resources/${resource.id}/edit`}>
+                  <Button variant="outline" size="sm">
+                    <Pencil className="mr-1 h-4 w-4" />
+                    Editar
+                  </Button>
+                </Link>
+              )}
+              <Button variant="outline" size="sm" onClick={handleDelete}>
+                <Trash2 className="mr-1 h-4 w-4 text-destructive" />
+                Eliminar
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
