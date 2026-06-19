@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session?.user?.id) {
       await loadProfile(session.user.id)
     }
-  }, [session?.user?.id, loadProfile])
+  }, [session, loadProfile])
 
   useEffect(() => {
     authService.getSession().then((currentSession) => {
@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {

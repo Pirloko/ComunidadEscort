@@ -39,6 +39,7 @@ export function AlertReviewModal({ alert, onClose }: AlertReviewModalProps) {
 
   useEffect(() => {
     if (alert) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowReject(false)
       reset()
     }

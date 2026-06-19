@@ -12,14 +12,13 @@ export function InstallPwaBanner() {
   const [dismissed, setDismissed] = useState(
     () => localStorage.getItem('pwa-install-dismissed') === '1',
   )
-  const [isStandalone, setIsStandalone] = useState(false)
+  const [isStandalone] = useState(
+    () =>
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true,
+  )
 
   useEffect(() => {
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
-    setIsStandalone(standalone)
-
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)

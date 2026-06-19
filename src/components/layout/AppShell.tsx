@@ -12,6 +12,7 @@ interface SearchContextValue {
 
 const SearchContext = createContext<SearchContextValue>({ search: '', setSearch: () => {} })
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSearch() {
   return useContext(SearchContext)
 }

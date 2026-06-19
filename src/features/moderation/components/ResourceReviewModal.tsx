@@ -40,6 +40,7 @@ export function ResourceReviewModal({ resource, onClose }: ResourceReviewModalPr
 
   useEffect(() => {
     if (resource) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowReject(false)
       reset()
     }

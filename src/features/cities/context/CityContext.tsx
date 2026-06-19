@@ -32,6 +32,7 @@ export function CityProvider({ children }: { children: ReactNode }) {
     const profileCity = cities.find((c) => c.id === profile?.city_id)
 
     if (storedCity) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedCityIdState(storedCity.id)
     } else if (profileCity) {
       setSelectedCityIdState(profileCity.id)
@@ -60,6 +61,7 @@ export function CityProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCity() {
   const context = useContext(CityContext)
   if (!context) throw new Error('useCity debe usarse dentro de CityProvider')
