@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { AlertCategoryBadge } from '@/features/alerts/components/AlertCategoryBadge'
 import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
+import { ReportButton } from '@/features/reports/components/ReportButton'
 import { StartChatButton } from '@/features/chat/components/StartChatButton'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime } from '@/lib/format'
@@ -83,7 +84,10 @@ export function AlertDetailPage() {
                 <span>{formatRelativeTime(alert.created_at)}</span>
               </div>
             </div>
-            <BookmarkButton itemType="alert" itemId={alert.id} size="sm" />
+            <div className="flex shrink-0">
+              <BookmarkButton itemType="alert" itemId={alert.id} size="sm" />
+              {!isAuthor && <ReportButton targetType="alert" targetId={alert.id} size="sm" />}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

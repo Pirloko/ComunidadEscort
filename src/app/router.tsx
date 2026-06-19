@@ -94,6 +94,11 @@ const ModerationCommentsPage = lazy(() =>
     default: m.ModerationCommentsPage,
   })),
 )
+const ModerationReportsPage = lazy(() =>
+  import('@/features/moderation/pages/ModerationReportsPage').then((m) => ({
+    default: m.ModerationReportsPage,
+  })),
+)
 const AdminLayout = lazy(() =>
   import('@/features/admin/components/AdminLayout').then((m) => ({ default: m.AdminLayout })),
 )
@@ -195,6 +200,7 @@ export function AppRouter() {
           <Route path="resources" element={<S><ModerationResourcesPage /></S>} />
           <Route path="posts" element={<S><ModerationPostsPage /></S>} />
           <Route path="comments" element={<S><ModerationCommentsPage /></S>} />
+          <Route path="reports" element={<S><ModerationReportsPage /></S>} />
         </Route>
         <Route
           path="/admin"

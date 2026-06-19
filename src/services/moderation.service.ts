@@ -157,4 +157,14 @@ export const moderationService = {
     if (error) throw error
     return count ?? 0
   },
+
+  async getPendingReportsCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from('reports')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pendiente')
+
+    if (error) throw error
+    return count ?? 0
+  },
 }

@@ -5,6 +5,8 @@ import { CategoryBadge } from '@/components/shared/CategoryBadge'
 import { Card, CardContent } from '@/components/ui/card'
 import { LikeButton } from '@/features/forum/components/LikeButton'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
+import { ReportButton } from '@/features/reports/components/ReportButton'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime, truncateText } from '@/lib/format'
 import type { Post } from '@/types/forum'
 
@@ -14,6 +16,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, compact = false }: PostCardProps) {
+  const { user } = useAuth()
   const author = post.author
 
   return (
@@ -72,6 +75,9 @@ export function PostCard({ post, compact = false }: PostCardProps) {
                 size="sm"
               />
               <BookmarkButton itemType="post" itemId={post.id} size="sm" />
+              {user?.id !== post.author_id && (
+                <ReportButton targetType="post" targetId={post.id} size="sm" />
+              )}
               <Link to={`/forum/${post.id}`}>
                 <span className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
                   <MessageCircle className="h-4 w-4" />

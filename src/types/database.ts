@@ -32,6 +32,17 @@ export type ResourceCategory =
 
 export type BookmarkType = 'post' | 'resource' | 'alert'
 
+export type ReportTargetType = 'post' | 'comment' | 'alert'
+
+export type ReportReason =
+  | 'spam'
+  | 'contenido_inapropiado'
+  | 'acoso'
+  | 'informacion_falsa'
+  | 'otro'
+
+export type ReportStatus = 'pendiente' | 'resuelto' | 'descartado'
+
 export type NotificationType =
   | 'new_comment'
   | 'new_reply'

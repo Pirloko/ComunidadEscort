@@ -4,6 +4,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { AlertCategoryBadge } from '@/features/alerts/components/AlertCategoryBadge'
 import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
+import { ReportButton } from '@/features/reports/components/ReportButton'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime, truncateText } from '@/lib/format'
 import type { Alert } from '@/types/alerts'
 import { cn } from '@/lib/utils'
@@ -22,12 +24,16 @@ const CATEGORY_ICON_COLORS: Record<string, string> = {
 }
 
 export function AlertCard({ alert, showStatus = false }: AlertCardProps) {
+  const { user } = useAuth()
   const iconColor = CATEGORY_ICON_COLORS[alert.category] ?? CATEGORY_ICON_COLORS.otro
 
   return (
     <Card className="relative h-full transition-shadow hover:shadow-md">
-      <div className="absolute right-2 top-2 z-10">
+      <div className="absolute right-2 top-2 z-10 flex">
         <BookmarkButton itemType="alert" itemId={alert.id} size="sm" />
+        {user?.id !== alert.author_id && (
+          <ReportButton targetType="alert" targetId={alert.id} size="sm" />
+        )}
       </div>
       <Link to={`/alerts/${alert.id}`}>
         <CardContent className="p-4 sm:p-5">

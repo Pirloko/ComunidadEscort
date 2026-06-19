@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { CommentThread } from '@/features/forum/components/CommentThread'
 import { LikeButton } from '@/features/forum/components/LikeButton'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
+import { ReportButton } from '@/features/reports/components/ReportButton'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime } from '@/lib/format'
 import { postService } from '@/services/post.service'
@@ -101,6 +102,7 @@ export function PostDetailPage() {
             </div>
             <div className="flex gap-1">
               <BookmarkButton itemType="post" itemId={post.id} size="sm" />
+              {!isAuthor && <ReportButton targetType="post" targetId={post.id} size="sm" />}
               {isAuthor && !post.is_locked && (
                 <Link to={`/forum/${post.id}/edit`}>
                   <Button variant="ghost" size="icon" aria-label="Editar">

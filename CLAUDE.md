@@ -99,6 +99,15 @@ Supabase cloud ref: `dxlqnlznhmeslzbxibhn.supabase.co` (según `.env.example`).
 
 ---
 
+## Despliegue
+
+- **Prod:** https://comunidadescort.netlify.app
+- **Host:** Netlify, config en `netlify.toml` (build: `npm run build`, publish: `dist`, redirect SPA `/*` → `/index.html`, `NODE_VERSION=20`).
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) — `checkout` → `npm ci` → `npm run lint` → `npm run build` en push/PR a `main`. No despliega; Netlify hace su propio build al detectar push a `main`.
+- Variables de entorno (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, etc.) deben configurarse también en el dashboard de Netlify, no solo en `.env` local.
+
+---
+
 ## Arquitectura
 
 ### Estructura por features
@@ -112,7 +121,7 @@ src/features/<dominio>/
   context/      # providers locales (ej. CityContext)
 ```
 
-**Dominios:** `auth`, `forum`, `alerts`, `resources`, `chat`, `bookmarks`, `notifications`, `profile`, `cities`, `moderation`, `admin`.
+**Dominios:** `auth`, `forum`, `alerts`, `resources`, `chat`, `bookmarks`, `notifications`, `profile`, `cities`, `moderation`, `admin`, `reports`.
 
 **Fuera de features:**
 
@@ -206,6 +215,7 @@ Trigger `ensure_staff_account_active`: al asignar rol `admin`/`moderator`, fuerz
 | Aprobar/rechazar/bloquear **cuentas** | Admin | `/admin/users` | Sí — registro queda `pendiente` |
 | Aprobar/rechazar **alertas** | Mod + Admin | `/moderation/alerts` | Sí — `status: pendiente` |
 | Aprobar/rechazar **recursos nuevos** | Mod + Admin | `/moderation/resources` | Sí — `status: pendiente` |
+| Resolver/descartar **reportes** de posts, comentarios y alertas | Mod + Admin | `/moderation/reports` | Sí — `status: pendiente` |
 | Verificar recurso (`is_verified`) | Admin | `/admin/resources` | No — badge de confianza post-aprobación |
 | Activar/desactivar recurso | Admin | `/admin/resources` | — |
 | Fijar/bloquear/eliminar **posts** | Mod + Admin | `/moderation/posts` | No — posts publican al instante |
@@ -247,6 +257,20 @@ Post-aprobación (Admin en /admin/resources):
 ```
 Autor puede editar recurso solo mientras `status=pendiente`.
 
+### Flujo: reportes de contenido (Moderación)
+```
+Usuaria ve botón "Reportar" en post/comentario/alerta (oculto para su propio contenido)
+  → Elige motivo (spam, contenido_inapropiado, acoso, informacion_falsa, otro) + detalle opcional
+  → INSERT en reports con status=pendiente (UNIQUE por reporter+target: no se duplica)
+  → Mod/Admin revisa en /moderation/reports (preview del contenido reportado)
+  → Marcar resuelto | Descartar (reviewed_by/reviewed_at) — sin notificación automática
+```
+Tabla `reports` (migración `00025`) referencia el contenido de forma polimórfica
+(`target_type` + `target_id`, sin FK — mismo patrón que `bookmarks`). No borra ni
+oculta el contenido original; la acción sobre el post/comentario/alerta reportado
+se hace manualmente desde `/moderation/posts`, `/moderation/comments` o
+`/moderation/alerts`.
+
 ### Flujo: foro (Moderación reactiva, sin cola)
 - Posts y comentarios **se publican inmediatamente** (no hay pre-moderación).
 - Moderación reactiva en `/moderation/posts`: fijar (`is_pinned`), bloquear comentarios (`is_locked`), eliminar.
@@ -256,6 +280,9 @@ Autor puede editar recurso solo mientras `status=pendiente`.
 ### Badges en Sidebar
 - Moderadores: contador alertas pendientes (`pending-alerts-count`, refetch 60s).
 - Admins: contador recursos sin verificar (`admin-unverified-count`, refetch 60s).
+
+`ModerationLayout` (tabs `/moderation/*`) además muestra badges propios de alertas,
+recursos y **reportes** (`pending-reports-count`, refetch 30s) — no están en el Sidebar.
 
 ---
 
@@ -270,8 +297,8 @@ Autor puede editar recurso solo mientras `status=pendiente`.
 
 ## Capa de datos (Supabase)
 
-### Services (12 archivos)
-`auth`, `profile`, `city`, `post`, `comment`, `alert`, `resource`, `chat`, `notification`, `bookmark`, `moderation`, `admin`.
+### Services (13 archivos)
+`auth`, `profile`, `city`, `post`, `comment`, `alert`, `resource`, `chat`, `notification`, `bookmark`, `moderation`, `admin`, `report`.
 
 ### RPCs existentes
 | RPC | Uso |
@@ -327,9 +354,9 @@ Aplicar en **orden de filename** en Supabase SQL Editor.
 | 7 | Notificaciones | `00007`, `00009g`, `00013g`, `00015` |
 | 10 | Bookmarks | `00006`, `00009h` |
 | — | RLS base, triggers core, seed, storage | `00009`, `00010`, `00011`, `00012`, `00013` |
-| Post-MVP | Moderación recursos, aprobación cuentas | `00018`–`00024` |
+| Post-MVP | Moderación recursos, aprobación cuentas, reportes | `00018`–`00025` |
 
-**Lista completa (35 archivos):** `00001` … `00024` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
+**Lista completa (37 archivos):** `00001` … `00025` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
 
 **Convención al añadir features:**
 1. `000XX_<feature>.sql` — tablas/columnas
@@ -348,6 +375,9 @@ post_category:       'seguridad' | 'consejos' | 'salud' | 'bienestar' | 'transpo
 alert_category:      'estafa' | 'robo' | 'incidente_seguridad' | 'advertencia' | 'otro'
 resource_category:   'delivery' | 'farmacias' | 'supermercados' | 'transporte' | 'salud' | 'juridico' | 'hospedaje' | 'otros'
 bookmark_type:       'post' | 'resource' | 'alert'
+report_target_type:  'post' | 'comment' | 'alert'
+report_reason:       'spam' | 'contenido_inapropiado' | 'acoso' | 'informacion_falsa' | 'otro'
+report_status:       'pendiente' | 'resuelto' | 'descartado'
 ```
 
 ---
@@ -374,6 +404,9 @@ bookmark_type:       'post' | 'resource' | 'alert'
 - [x] Multi-ciudad con selector persistente
 - [x] PWA básica
 - [x] Notificación de cuenta aprobada/rechazada (migración `00024`, `notify_account_status_change`)
+- [x] Reportes de posts, comentarios y alertas con cola en `/moderation/reports` (migración `00025`)
+- [x] CI en GitHub Actions (lint + build en push/PR a `main`)
+- [x] Deploy en Netlify (`netlify.toml`)
 
 ### Prioridad alta (trabajo reciente / estabilización)
 1. **Verificar migraciones 00021–00024 aplicadas** en Supabase cloud (cuentas pendientes, `blocked_emails`, admin operativo).
@@ -381,11 +414,10 @@ bookmark_type:       'post' | 'resource' | 'alert'
 3. **Flujo end-to-end de registro → aprobación → acceso** probado en prod/staging.
 
 ### Prioridad media
-5. Tests (Vitest + Testing Library) — infraestructura inexistente.
-6. CI/CD (lint + build en PR) — no configurado.
-7. Deploy producción documentado (no hay `vercel.json` / `netlify.toml` / GitHub Actions).
-8. Implementar `mention` en comentarios/posts.
-9. Cola de alertas pendientes: decidir si filtrar por ciudad o mantener global.
+4. Tests (Vitest + Testing Library) — infraestructura inexistente.
+5. Implementar `mention` en comentarios/posts.
+6. Cola de alertas pendientes: decidir si filtrar por ciudad o mantener global.
+7. Acción directa sobre el contenido reportado desde `/moderation/reports` (hoy solo enlaza a `/moderation/posts|comments|alerts`).
 
 ### Prioridad baja
 10. Pre-moderación de posts del foro (hoy publican al instante).

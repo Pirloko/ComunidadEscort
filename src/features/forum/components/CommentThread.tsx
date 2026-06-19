@@ -7,6 +7,7 @@ import { Loader2, Trash2, Reply } from 'lucide-react'
 import { Avatar } from '@/components/shared/Avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { ReportButton } from '@/features/reports/components/ReportButton'
 import { commentSchema, type CommentFormData } from '@/features/forum/schemas/forum.schema'
 import { formatRelativeTime } from '@/lib/format'
 import { commentService } from '@/services/comment.service'
@@ -83,6 +84,9 @@ function CommentItem({
                 <Trash2 className="h-3 w-3" />
                 Eliminar
               </Button>
+            )}
+            {!isAuthor && (
+              <ReportButton targetType="comment" targetId={comment.id} size="sm" className="h-7" />
             )}
           </div>
         </div>
