@@ -44,12 +44,21 @@ Deno.serve(async (req) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey)
   const { data: profile } = await adminClient
     .from('profiles')
-    .select('email')
+    .select('email, account_status')
     .eq('phone', phone)
     .maybeSingle()
 
   // Mismo error genérico exista o no el teléfono: evita enumeración.
   if (!profile?.email) {
+    return jsonResponse({ error: GENERIC_ERROR }, 401)
+  }
+
+  // No emitir tokens para cuentas bloqueadas: el chequeo debe vivir aquí
+  // (server-side), no solo en el cliente tras el login.
+  const { data: emailBlocked } = await adminClient.rpc('is_email_blocked', {
+    p_email: profile.email,
+  })
+  if (emailBlocked || profile.account_status === 'bloqueada') {
     return jsonResponse({ error: GENERIC_ERROR }, 401)
   }
 
