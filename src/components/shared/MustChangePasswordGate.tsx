@@ -3,8 +3,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth'
 import { Skeleton } from '@/components/ui/skeleton'
 
 function useMustChangePassword() {
-  const { user, isLoading } = useAuth()
-  return { mustChange: user?.user_metadata?.must_change_password === true, isLoading }
+  const { profile, isLoading } = useAuth()
+  return { mustChange: profile?.must_change_password === true, isLoading }
 }
 
 /** Bloquea el resto de la app hasta que la usuaria cambie su contraseña temporal. */

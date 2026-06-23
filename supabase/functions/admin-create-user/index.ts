@@ -16,6 +16,16 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
+function randomInt(maxExclusive: number): number {
+  const buf = new Uint32Array(1)
+  crypto.getRandomValues(buf)
+  return buf[0] % maxExclusive
+}
+
+function pick(chars: string): string {
+  return chars[randomInt(chars.length)]
+}
+
 function generateTemporaryPassword(): string {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
   const lower = 'abcdefghijkmnpqrstuvwxyz'
@@ -23,17 +33,17 @@ function generateTemporaryPassword(): string {
   const symbols = '!@#$%*'
   const all = upper + lower + digits + symbols
 
-  const pick = (chars: string) => chars[Math.floor(Math.random() * chars.length)]
-
-  let password = pick(upper) + pick(digits) + pick(symbols)
-  for (let i = password.length; i < 12; i++) {
-    password += pick(all)
+  const chars = [pick(upper), pick(digits), pick(symbols)]
+  while (chars.length < 12) {
+    chars.push(pick(all))
   }
 
-  return password
-    .split('')
-    .sort(() => Math.random() - 0.5)
-    .join('')
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1)
+    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+  }
+
+  return chars.join('')
 }
 
 Deno.serve(async (req) => {

@@ -29,6 +29,24 @@ export const authService = {
     return data
   },
 
+  async signInWithPhone(phone: string, password: string) {
+    const { data, error } = await supabase.functions.invoke<{
+      access_token: string
+      refresh_token: string
+    }>('login-with-phone', { body: { phone, password } })
+
+    if (error || !data?.access_token || !data?.refresh_token) {
+      throw new Error('Credenciales inválidas')
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+    })
+    if (sessionError) throw sessionError
+    return sessionData
+  },
+
   async signOut() {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
@@ -47,11 +65,11 @@ export const authService = {
   },
 
   async completeForcedPasswordChange(password: string) {
-    const { error } = await supabase.auth.updateUser({
-      password,
-      data: { must_change_password: false },
-    })
+    const { error } = await supabase.auth.updateUser({ password })
     if (error) throw error
+
+    const { error: rpcError } = await supabase.rpc('complete_forced_password_change')
+    if (rpcError) throw rpcError
   },
 
   async getSession() {

@@ -8,7 +8,7 @@ import type {
 } from '@/types/admin'
 
 const OWN_PROFILE_COLUMNS =
-  'id, alias, city_id, avatar_url, description, privacy_settings, publication_link, phone, account_status, rejection_reason, role, is_active, last_seen_at, created_at, updated_at, email'
+  'id, alias, city_id, avatar_url, description, privacy_settings, publication_link, phone, account_status, rejection_reason, role, is_active, must_change_password, last_seen_at, created_at, updated_at, email'
 
 const OWN_PROFILE_FALLBACK_COLUMNS =
   'id, alias, city_id, avatar_url, description, privacy_settings, role, is_active, last_seen_at, created_at, updated_at, email'
@@ -164,12 +164,6 @@ export const profileService = {
     const { data, error } = await supabase.rpc('is_email_blocked', { p_email: email })
     if (error) throw error
     return data as boolean
-  },
-
-  async getEmailByPhone(phone: string): Promise<string | null> {
-    const { data, error } = await supabase.rpc('get_auth_email_by_phone', { p_phone: phone })
-    if (error) throw error
-    return (data as string | null) ?? null
   },
 
   async createUserAsAdmin(input: CreateUserAsAdminInput): Promise<CreateUserAsAdminResult> {

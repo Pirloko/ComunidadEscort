@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/features/auth/schemas/auth.schema'
 import { authService } from '@/services/auth.service'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 
 export function ChangePasswordRequiredForm() {
   const navigate = useNavigate()
+  const { refreshProfile } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   const {
@@ -24,6 +26,7 @@ export function ChangePasswordRequiredForm() {
     setError(null)
     try {
       await authService.completeForcedPasswordChange(data.password)
+      await refreshProfile()
       navigate('/feed', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar la contraseña')

@@ -79,6 +79,7 @@ export interface Profile extends PublicProfile {
   rejection_reason: string | null
   role: UserRole
   is_active: boolean
+  must_change_password: boolean
   last_seen_at: string | null
   updated_at: string
 }

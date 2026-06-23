@@ -194,7 +194,7 @@ Todas las pages (salvo auth) se cargan con `React.lazy` + `Suspense` + `PageLoad
 4. Admin revisa en `/admin/users` (filtro “Pendientes de aprobación”).
 
 ### Login con email o celular
-- Un solo campo "Email o celular" (`LoginForm.tsx`). Si el input parece teléfono (`looksLikePhone`, `src/lib/phone.ts`), se normaliza y se resuelve el email real vía RPC `get_auth_email_by_phone` (SECURITY DEFINER, `GRANT a anon+authenticated`) antes de llamar `signInWithPassword`.
+- Un solo campo "Email o celular" (`LoginForm.tsx`). Si el input parece teléfono (`looksLikePhone`, `src/lib/phone.ts`), se normaliza y se autentica enteramente server-side vía la Edge Function `login-with-phone` (`authService.signInWithPhone`), que resuelve el email con `service_role`, llama al endpoint `/auth/v1/token` de GoTrue y devuelve solo los tokens de sesión — **el email nunca llega al cliente** y el error es genérico exista o no el teléfono (evita enumeración). El cliente aplica esos tokens con `supabase.auth.setSession(...)`.
 - `normalizePhoneChile(input)` (`src/lib/phone.ts`) acepta variantes (`+56 9 1234 5678`, `912345678`, `56912345678`, con espacios/guiones) y devuelve `+569XXXXXXXX` o lanza error.
 
 ### Política de contraseña
@@ -208,8 +208,8 @@ Todas las pages (salvo auth) se cargan con `React.lazy` + `Suspense` + `PageLoad
 - Toda cuenta creada por admin nace con rol `'user'` — si se necesita moderator/admin, se cambia después desde el selector de rol que ya existe en `UserRow`.
 
 ### Cambio obligatorio de contraseña (primer login tras alta por admin)
-- Gate `MustChangePasswordGate.tsx` (`RequirePasswordChangeDone` / `MustChangePasswordRoute`) lee `user.user_metadata.must_change_password` y redirige a `/cambiar-password-obligatorio` antes de llegar a `/cuenta-pendiente` o `ActiveAccountRoute` — cubre el caso de cuentas admin-create-user que ya están `aprobada`+`is_active` y entrarían directo al feed.
-- `authService.completeForcedPasswordChange(password)` hace `updateUser({ password, data: { must_change_password: false } })` en una sola llamada; `useAuth` se refresca solo vía `onAuthStateChange`.
+- Gate `MustChangePasswordGate.tsx` (`RequirePasswordChangeDone` / `MustChangePasswordRoute`) lee `profile.must_change_password` (columna en `profiles`, **no** `user_metadata` — un usuario no puede limpiarla por su cuenta) y redirige a `/cambiar-password-obligatorio` antes de llegar a `/cuenta-pendiente` o `ActiveAccountRoute` — cubre el caso de cuentas admin-create-user que ya están `aprobada`+`is_active` y entrarían directo al feed.
+- `authService.completeForcedPasswordChange(password)` hace `updateUser({ password })` y luego llama al RPC `complete_forced_password_change()` (única vía permitida para limpiar el flag; ver defensa en profundidad abajo), seguido de `refreshProfile()` antes de navegar a `/feed`.
 
 ### Lógica de acceso (`src/lib/account-access.ts`)
 ```typescript
@@ -228,8 +228,10 @@ Trigger `ensure_staff_account_active`: al asignar rol `admin`/`moderator`, fuerz
 ### Ciudad opcional y asignación post-aprobación
 **Decisión:** `city_id` es nullable desde `00027` y ya no se pide en el registro público ni en el flujo de aprobación admin (`UserReviewModal`/`UserApproveButton` sin cambios). La usuaria elige/cambia su ciudad cuando quiera desde `/profile/edit` (`ProfileEditForm` con opción "Sin asignar"). `CityContext` ya maneja `city_id=null` sin romperse (cae a la primera ciudad activa). Se eligió esta vía por ser la de menor superficie de cambio frente a agregar un selector de ciudad al modal de aprobación.
 
-### Defensa en profundidad: solo admin cambia role/account_status/is_active
-RLS de `profiles` (`profiles_update_own`, `00009`) permite `UPDATE` de cualquier columna de la propia fila sin distinguir cuáles — un moderator/usuario no puede tocar la fila de **otra** persona (solo `is_admin()` tiene `FOR ALL`), pero en teoría podría intentar auto-promoverse sobre su propia fila. El trigger `before_profiles_update_guard` / `prevent_profile_privilege_escalation()` (`00029`) bloquea cambios a `role`, `account_status` o `is_active` salvo que el caller sea `is_admin()` o `auth.role() = 'service_role'` (Edge Functions). No afecta a `reviewAccount`/`adminUpdateProfile` (admin) ni a `admin-create-user` (service_role).
+### Defensa en profundidad: solo admin cambia role/account_status/is_active/must_change_password
+RLS de `profiles` (`profiles_update_own`, `00009`) permite `UPDATE` de cualquier columna de la propia fila sin distinguir cuáles — un moderator/usuario no puede tocar la fila de **otra** persona (solo `is_admin()` tiene `FOR ALL`), pero en teoría podría intentar auto-promoverse sobre su propia fila. El trigger `before_profiles_update_guard` / `prevent_profile_privilege_escalation()` (`00029`, extendido en `00030`) bloquea cambios a `role`, `account_status`, `is_active` o `must_change_password` salvo que el caller sea `is_admin()`, `auth.role() = 'service_role'` (Edge Functions), o esté dentro de `complete_forced_password_change()` (que activa un bypass local de transacción vía `set_config('app.bypass_password_gate', 'true', true)` — solo alcanzable desde esa función, nunca desde un `UPDATE` directo del cliente). No afecta a `reviewAccount`/`adminUpdateProfile` (admin) ni a `admin-create-user` (service_role).
+
+**Nota de seguridad (`00030`):** la primera versión de este flujo (`00027`–`00029`) tenía dos fallas corregidas antes de exponerse en prod: (1) `get_auth_email_by_phone` devolvía el email real a `anon` — enumeración de usuarios particularmente sensible en una app de anonimato; reemplazada por la Edge Function `login-with-phone`. (2) `must_change_password` vivía en `user_metadata`, que el propio usuario puede sobrescribir vía `auth.updateUser({data})` — bypass del cambio forzado; movida a `profiles.must_change_password` con el guard de arriba. También se cambió `Math.random()` por `crypto.getRandomValues()` para la contraseña temporal en `admin-create-user`.
 
 ---
 
@@ -334,12 +336,13 @@ recursos y **reportes** (`pending-reports-count`, refetch 30s) — no están en 
 | `is_alias_available` | Validar alias en registro |
 | `is_email_blocked` | Validar email bloqueado |
 | `get_or_create_direct_conversation` | Chat 1:1 |
-| `get_auth_email_by_phone` | Resolver email a partir de celular normalizado (login dual) |
+| `complete_forced_password_change` | Limpia `profiles.must_change_password` (única vía permitida, ver defensa en profundidad) |
 
 ### Edge Functions
 | Función | Uso |
 |---------|-----|
-| `admin-create-user` (`supabase/functions/admin-create-user/`) | Admin crea cuentas manualmente ya aprobadas, con password temporal; verifica `role='admin'` del caller; usa `SUPABASE_SERVICE_ROLE_KEY` (auto-inyectada, sin secret manual) |
+| `admin-create-user` (`supabase/functions/admin-create-user/`) | Admin crea cuentas manualmente ya aprobadas, con password temporal (CSPRNG); verifica `role='admin'` del caller; usa `SUPABASE_SERVICE_ROLE_KEY` (auto-inyectada, sin secret manual) |
+| `login-with-phone` (`supabase/functions/login-with-phone/`, `verify_jwt=false`) | Login por celular: resuelve email con `service_role` y autentica vía GoTrue `/auth/v1/token`, sin exponer el email al cliente; error genérico ante teléfono inexistente o password incorrecta |
 
 ### Storage
 - Bucket `avatars`: upload en `profileService.uploadAvatar` (max 2 MB, jpg/png/webp).
@@ -388,9 +391,9 @@ Aplicar en **orden de filename** en Supabase SQL Editor.
 | 10 | Bookmarks | `00006`, `00009h` |
 | — | RLS base, triggers core, seed, storage | `00009`, `00010`, `00011`, `00012`, `00013` |
 | Post-MVP | Moderación recursos, aprobación cuentas, reportes, menciones | `00018`–`00026` |
-| Post-MVP | Teléfono + ciudad opcional, login por celular, defensa en profundidad RLS | `00027`–`00029` |
+| Post-MVP | Teléfono + ciudad opcional, login por celular, defensa en profundidad RLS, fixes de seguridad | `00027`–`00030` |
 
-**Lista completa:** `00001` … `00029` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
+**Lista completa:** `00001` … `00030` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
 
 **Convención al añadir features:**
 1. `000XX_<feature>.sql` — tablas/columnas
@@ -475,7 +478,7 @@ report_status:       'pendiente' | 'resuelto' | 'descartado'
 | 5 | **Deploy target** | ¿Vercel, Netlify, Cloudflare Pages? Sin config en repo aún. |
 | 6 | **Testing strategy** | ¿Vitest unit + E2E Playwright? Sin decisión. |
 | 8 | **Invites/códigos** | Acceso solo por aprobación manual; ¿añadir invite codes? |
-| 9 | **Rate limiting / anti-spam** | Sin implementar en cliente ni Edge Functions. `get_auth_email_by_phone`/`is_alias_available`/`is_email_blocked` son RPCs `anon` sin rate limit (mismo riesgo de enumeración ya aceptado en el proyecto). |
+| 9 | **Rate limiting / anti-spam** | Sin implementar en cliente ni Edge Functions. `login-with-phone`/`is_alias_available`/`is_email_blocked` son endpoints `anon` sin rate limit; `login-with-phone` ya no filtra el email (ver `00030`), pero sigue sin throttling de intentos. |
 
 ---
 

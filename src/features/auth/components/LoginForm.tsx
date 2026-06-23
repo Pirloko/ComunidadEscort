@@ -29,25 +29,22 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setError(null)
     try {
-      let email = data.identifier
+      let user
 
       if (looksLikePhone(data.identifier)) {
         const phone = normalizePhoneChile(data.identifier)
-        const foundEmail = await profileService.getEmailByPhone(phone)
-        if (!foundEmail) {
-          setError('No encontramos una cuenta con ese celular o correo.')
+        const result = await authService.signInWithPhone(phone, data.password)
+        user = result.user
+      } else {
+        const blocked = await profileService.isEmailBlocked(data.identifier)
+        if (blocked) {
+          setError('Este correo está bloqueado y no puede ingresar a la comunidad.')
           return
         }
-        email = foundEmail
+        const result = await authService.signIn(data.identifier, data.password)
+        user = result.user
       }
 
-      const blocked = await profileService.isEmailBlocked(email)
-      if (blocked) {
-        setError('Este correo está bloqueado y no puede ingresar a la comunidad.')
-        return
-      }
-
-      const { user } = await authService.signIn(email, data.password)
       if (!user) throw new Error('No se pudo iniciar sesión')
 
       const profile = await profileService.getOwnProfile(user.id)
