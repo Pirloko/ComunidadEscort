@@ -6,11 +6,13 @@ Guía de contexto para Claude Code al trabajar en este repositorio. **Responde s
 
 ## Resumen del proyecto
 
-**Comunidadescort.cl** — PWA privada (React 19 + TypeScript + Vite) para seguridad, apoyo mutuo y bienestar, con alcance por ciudad en Chile. Backend: **Supabase** (Postgres + Auth + Realtime + Storage), accedido directamente desde el cliente con `@supabase/supabase-js`. **No hay API server propio.**
+**Comunidadescort.cl** — PWA privada (React 19 + TypeScript + Vite) para seguridad, apoyo mutuo y bienestar, con alcance por ciudad en Chile. Backend: **Supabase** (Postgres + Auth + Realtime + Storage), accedido directamente desde el cliente con `@supabase/supabase-js`. **No hay API server propio** salvo Edge Functions puntuales para operaciones privilegiadas (ver `supabase/functions/`).
 
 - Textos de UI, mensajes de validación y valores de enums de dominio: **español**.
 - Acceso gated: registro → cuenta `pendiente` → revisión admin → acceso a la comunidad.
-- Registro exige `publication_link` (URL de publicación externa) para verificación de identidad.
+- Registro exige `publication_link` (URL de publicación externa) y `phone` (celular chileno normalizado) para verificación de identidad. `city_id` es **opcional** en el registro — se asigna después desde el perfil.
+- Login acepta **email o celular** (`+569XXXXXXXX`) indistintamente.
+- Admin puede **crear cuentas manualmente** (ya aprobadas) vía Edge Function, con contraseña temporal de un solo uso y cambio obligatorio en el primer login.
 
 ---
 
@@ -154,6 +156,7 @@ QueryClientProvider (staleTime 5 min)
 |------|--------|-------------|
 | `/login`, `/register`, `/forgot-password` | Guest | Auth pública |
 | `/reset-password` | Público | Reset con token Supabase |
+| `/cambiar-password-obligatorio` | Autenticado, `must_change_password=true` | Cambio forzado tras alta por admin |
 | `/cuenta-pendiente` | Autenticado, cuenta no activa | Espera de aprobación |
 | `/feed`, `/forum/*`, `/alerts/*`, `/resources/*` | Cuenta activa | Features de comunidad |
 | `/chat/*`, `/notifications`, `/bookmarks`, `/members` | Cuenta activa | Comunicación y perfil |
@@ -161,7 +164,7 @@ QueryClientProvider (staleTime 5 min)
 | `/moderation/*` | `moderator` \| `admin` | Panel de moderación |
 | `/admin/*` | `admin` | Panel administrativo |
 
-**Guards (en orden):** `ProtectedRoute` → `ActiveAccountRoute` → `AppShell` → `RoleGuard` (moderation/admin).
+**Guards (en orden):** `ProtectedRoute` → `MustChangePasswordRoute`/`RequirePasswordChangeDone` (`src/components/shared/MustChangePasswordGate.tsx`) → `ActiveAccountRoute` → `AppShell` → `RoleGuard` (moderation/admin).
 
 Todas las pages (salvo auth) se cargan con `React.lazy` + `Suspense` + `PageLoader`.
 
@@ -185,10 +188,28 @@ Todas las pages (salvo auth) se cargan con `React.lazy` + `Suspense` + `PageLoad
 | `bloqueada` | Sin acceso; email añadido a `blocked_emails` |
 
 ### Registro
-1. Usuario completa alias, email, password, ciudad, **`publication_link`** (URL obligatoria).
+1. Usuario completa alias, email, password, **`phone`** (celular chileno, normalizado a `+569XXXXXXXX`), **`publication_link`** (URL obligatoria). **`city_id` ya no se pide en el registro** — se elige después desde `/profile/edit` (decisión documentada más abajo).
 2. Se valida email no bloqueado (`is_email_blocked` RPC) y alias disponible (`is_alias_available` RPC).
-3. Trigger `handle_new_user` crea perfil con `is_active=false`, `account_status='pendiente'`.
+3. Trigger `handle_new_user` (actualizado en `00027`) crea perfil con `is_active=false`, `account_status='pendiente'`, exige `phone` válido en metadata (formato `+569\d{8}`), `city_id` queda `NULL`.
 4. Admin revisa en `/admin/users` (filtro “Pendientes de aprobación”).
+
+### Login con email o celular
+- Un solo campo "Email o celular" (`LoginForm.tsx`). Si el input parece teléfono (`looksLikePhone`, `src/lib/phone.ts`), se normaliza y se resuelve el email real vía RPC `get_auth_email_by_phone` (SECURITY DEFINER, `GRANT a anon+authenticated`) antes de llamar `signInWithPassword`.
+- `normalizePhoneChile(input)` (`src/lib/phone.ts`) acepta variantes (`+56 9 1234 5678`, `912345678`, `56912345678`, con espacios/guiones) y devuelve `+569XXXXXXXX` o lanza error.
+
+### Política de contraseña
+- `passwordSchema` compartido en `src/features/auth/schemas/auth.schema.ts`: mínimo 6 caracteres + al menos 1 mayúscula + al menos 1 número o símbolo. Reutilizado en `registerSchema`, `resetPasswordSchema` y el formulario de cambio obligatorio (`ChangePasswordRequiredForm`, reusa `resetPasswordSchema`).
+- El login **no** aplica `passwordSchema` (solo exige que no esté vacío) para no rechazar contraseñas antiguas más débiles ya existentes.
+
+### Admin crea usuarios manualmente
+- Botón "Crear usuario" en `/admin/users` (`CreateUserModal.tsx`) → pide `alias, email, phone, publication_link, city_id` (opcional) → invoca la Edge Function `admin-create-user` (`supabase/functions/admin-create-user/index.ts`).
+- La Edge Function verifica que el caller sea `role='admin'` (consulta `profiles` con su propio JWT), genera una contraseña temporal segura server-side, crea el `auth.user` (`email_confirm: true`, metadata `must_change_password: true`), y aprueba el perfil automáticamente (`account_status='aprobada'`, `is_active=true`, `reviewed_by`, `reviewed_at`) usando el cliente con `SUPABASE_SERVICE_ROLE_KEY` (inyectada automáticamente por Supabase a toda Edge Function — **no requiere configurar secret manual**).
+- Devuelve `{ email, temporaryPassword }`; el modal muestra "Credenciales — copia ahora, no se volverán a mostrar" con botón Copiar.
+- Toda cuenta creada por admin nace con rol `'user'` — si se necesita moderator/admin, se cambia después desde el selector de rol que ya existe en `UserRow`.
+
+### Cambio obligatorio de contraseña (primer login tras alta por admin)
+- Gate `MustChangePasswordGate.tsx` (`RequirePasswordChangeDone` / `MustChangePasswordRoute`) lee `user.user_metadata.must_change_password` y redirige a `/cambiar-password-obligatorio` antes de llegar a `/cuenta-pendiente` o `ActiveAccountRoute` — cubre el caso de cuentas admin-create-user que ya están `aprobada`+`is_active` y entrarían directo al feed.
+- `authService.completeForcedPasswordChange(password)` hace `updateUser({ password, data: { must_change_password: false } })` en una sola llamada; `useAuth` se refresca solo vía `onAuthStateChange`.
 
 ### Lógica de acceso (`src/lib/account-access.ts`)
 ```typescript
@@ -203,6 +224,12 @@ canAccessCommunity(profile):
 
 ### Staff
 Trigger `ensure_staff_account_active`: al asignar rol `admin`/`moderator`, fuerza `is_active=true` y `account_status='aprobada'`.
+
+### Ciudad opcional y asignación post-aprobación
+**Decisión:** `city_id` es nullable desde `00027` y ya no se pide en el registro público ni en el flujo de aprobación admin (`UserReviewModal`/`UserApproveButton` sin cambios). La usuaria elige/cambia su ciudad cuando quiera desde `/profile/edit` (`ProfileEditForm` con opción "Sin asignar"). `CityContext` ya maneja `city_id=null` sin romperse (cae a la primera ciudad activa). Se eligió esta vía por ser la de menor superficie de cambio frente a agregar un selector de ciudad al modal de aprobación.
+
+### Defensa en profundidad: solo admin cambia role/account_status/is_active
+RLS de `profiles` (`profiles_update_own`, `00009`) permite `UPDATE` de cualquier columna de la propia fila sin distinguir cuáles — un moderator/usuario no puede tocar la fila de **otra** persona (solo `is_admin()` tiene `FOR ALL`), pero en teoría podría intentar auto-promoverse sobre su propia fila. El trigger `before_profiles_update_guard` / `prevent_profile_privilege_escalation()` (`00029`) bloquea cambios a `role`, `account_status` o `is_active` salvo que el caller sea `is_admin()` o `auth.role() = 'service_role'` (Edge Functions). No afecta a `reviewAccount`/`adminUpdateProfile` (admin) ni a `admin-create-user` (service_role).
 
 ---
 
@@ -307,6 +334,12 @@ recursos y **reportes** (`pending-reports-count`, refetch 30s) — no están en 
 | `is_alias_available` | Validar alias en registro |
 | `is_email_blocked` | Validar email bloqueado |
 | `get_or_create_direct_conversation` | Chat 1:1 |
+| `get_auth_email_by_phone` | Resolver email a partir de celular normalizado (login dual) |
+
+### Edge Functions
+| Función | Uso |
+|---------|-----|
+| `admin-create-user` (`supabase/functions/admin-create-user/`) | Admin crea cuentas manualmente ya aprobadas, con password temporal; verifica `role='admin'` del caller; usa `SUPABASE_SERVICE_ROLE_KEY` (auto-inyectada, sin secret manual) |
 
 ### Storage
 - Bucket `avatars`: upload en `profileService.uploadAvatar` (max 2 MB, jpg/png/webp).
@@ -331,9 +364,9 @@ recursos y **reportes** (`pending-reports-count`, refetch 30s) — no están en 
 | Recurso aprobado/rechazado | `resource_approved` / `resource_rejected` |
 | Cuenta aprobada/rechazada (`00024`, `notify_account_status_change`) | `account_approved` / `account_rejected` |
 | Mensaje privado | `new_message` |
+| Mención `@alias` en comentario (`00026`, `notify_mentions`) | `mention` |
 
 ### No implementado
-- `mention` — enum definido, sin trigger ni UI.
 - Notificación de **cuenta bloqueada** (`bloqueada` no dispara notificación; ver `notify_account_status_change`).
 
 Frontend: `/notifications` + badge unread; suscripción realtime invalida cache React Query.
@@ -354,9 +387,10 @@ Aplicar en **orden de filename** en Supabase SQL Editor.
 | 7 | Notificaciones | `00007`, `00009g`, `00013g`, `00015` |
 | 10 | Bookmarks | `00006`, `00009h` |
 | — | RLS base, triggers core, seed, storage | `00009`, `00010`, `00011`, `00012`, `00013` |
-| Post-MVP | Moderación recursos, aprobación cuentas, reportes | `00018`–`00025` |
+| Post-MVP | Moderación recursos, aprobación cuentas, reportes, menciones | `00018`–`00026` |
+| Post-MVP | Teléfono + ciudad opcional, login por celular, defensa en profundidad RLS | `00027`–`00029` |
 
-**Lista completa (37 archivos):** `00001` … `00025` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
+**Lista completa:** `00001` … `00029` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
 
 **Convención al añadir features:**
 1. `000XX_<feature>.sql` — tablas/columnas
@@ -405,6 +439,10 @@ report_status:       'pendiente' | 'resuelto' | 'descartado'
 - [x] PWA básica
 - [x] Notificación de cuenta aprobada/rechazada (migración `00024`, `notify_account_status_change`)
 - [x] Reportes de posts, comentarios y alertas con cola en `/moderation/reports` (migración `00025`)
+- [x] Menciones `@alias` en comentarios con notificación (migración `00026`)
+- [x] Teléfono normalizado (`+569XXXXXXXX`), login dual email/celular, `city_id` opcional en registro (migraciones `00027`–`00029`)
+- [x] Admin crea usuarios manualmente vía Edge Function (`admin-create-user`) con cambio obligatorio de contraseña en primer login
+- [x] Política de contraseña compartida (mayúscula + número/símbolo) en registro, reset y cambio obligatorio
 - [x] CI en GitHub Actions (lint + build en push/PR a `main`)
 - [x] Deploy en Netlify (`netlify.toml`)
 
@@ -432,13 +470,12 @@ report_status:       'pendiente' | 'resuelto' | 'descartado'
 |---|------|---------------------|
 | 1 | **Pre-moderación del foro** | Hoy posts/comentarios son instantáneos; ¿añadir cola `pendiente` como alertas? |
 | 2 | **Alertas: cola global vs por ciudad** | UI de moderación muestra cola global; stats filtran por ciudad — ¿unificar? |
-| 3 | **Moderadores aprueban cuentas** | Hoy solo admin en `/admin/users`; ¿delegar a moderadores? |
+| 3 | **Moderadores aprueban cuentas** | **Confirmado y reforzado (`00029`)**: solo `admin` (RLS `is_admin()` + trigger `prevent_profile_privilege_escalation`). Moderadores no tienen vía RLS para tocar `account_status`/`role`/`is_active` de otros perfiles. |
 | 4 | **`is_active` vs `account_status`** | Duplicidad legacy; ¿migrar a un solo campo? |
 | 5 | **Deploy target** | ¿Vercel, Netlify, Cloudflare Pages? Sin config en repo aún. |
 | 6 | **Testing strategy** | ¿Vitest unit + E2E Playwright? Sin decisión. |
-| 7 | **`mention` notifications** | Enum existe; sin parser ni triggers. |
 | 8 | **Invites/códigos** | Acceso solo por aprobación manual; ¿añadir invite codes? |
-| 9 | **Rate limiting / anti-spam** | Sin implementar en cliente ni Edge Functions. |
+| 9 | **Rate limiting / anti-spam** | Sin implementar en cliente ni Edge Functions. `get_auth_email_by_phone`/`is_alias_available`/`is_email_blocked` son RPCs `anon` sin rate limit (mismo riesgo de enumeración ya aceptado en el proyecto). |
 
 ---
 

@@ -11,6 +11,7 @@ import { loginSchema, type LoginFormData } from '@/features/auth/schemas/auth.sc
 import { authService } from '@/services/auth.service'
 import { profileService } from '@/services/profile.service'
 import { canAccessCommunity } from '@/lib/account-access'
+import { looksLikePhone, normalizePhoneChile } from '@/lib/phone'
 
 export function LoginForm() {
   const navigate = useNavigate()
@@ -28,13 +29,25 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setError(null)
     try {
-      const blocked = await profileService.isEmailBlocked(data.email)
+      let email = data.identifier
+
+      if (looksLikePhone(data.identifier)) {
+        const phone = normalizePhoneChile(data.identifier)
+        const foundEmail = await profileService.getEmailByPhone(phone)
+        if (!foundEmail) {
+          setError('No encontramos una cuenta con ese celular o correo.')
+          return
+        }
+        email = foundEmail
+      }
+
+      const blocked = await profileService.isEmailBlocked(email)
       if (blocked) {
         setError('Este correo está bloqueado y no puede ingresar a la comunidad.')
         return
       }
 
-      const { user } = await authService.signIn(data.email, data.password)
+      const { user } = await authService.signIn(email, data.password)
       if (!user) throw new Error('No se pudo iniciar sesión')
 
       const profile = await profileService.getOwnProfile(user.id)
@@ -65,9 +78,15 @@ export function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Correo electrónico</Label>
-            <Input id="email" type="email" placeholder="tu@correo.com" {...register('email')} />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            <Label htmlFor="identifier">Email o celular</Label>
+            <Input
+              id="identifier"
+              placeholder="tu@correo.com o +56 9 1234 5678"
+              {...register('identifier')}
+            />
+            {errors.identifier && (
+              <p className="text-sm text-destructive">{errors.identifier.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">

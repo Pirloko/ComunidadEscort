@@ -8,14 +8,14 @@ export const authService = {
     email: string,
     password: string,
     alias: string,
-    cityId: string,
+    phone: string,
     publicationLink: string,
   ) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { alias, city_id: cityId, publication_link: publicationLink },
+        data: { alias, phone, publication_link: publicationLink },
         emailRedirectTo: `${window.location.origin}/login`,
       },
     })
@@ -43,6 +43,14 @@ export const authService = {
 
   async updatePassword(password: string) {
     const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  },
+
+  async completeForcedPasswordChange(password: string) {
+    const { error } = await supabase.auth.updateUser({
+      password,
+      data: { must_change_password: false },
+    })
     if (error) throw error
   },
 

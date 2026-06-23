@@ -1,9 +1,14 @@
 import { supabase } from '@/lib/supabase/client'
 import type { PrivacySettings, Profile, PublicProfile, UserRole } from '@/types/database'
-import type { AdminProfile, ReviewAccountInput } from '@/types/admin'
+import type {
+  AdminProfile,
+  CreateUserAsAdminInput,
+  CreateUserAsAdminResult,
+  ReviewAccountInput,
+} from '@/types/admin'
 
 const OWN_PROFILE_COLUMNS =
-  'id, alias, city_id, avatar_url, description, privacy_settings, publication_link, account_status, rejection_reason, role, is_active, last_seen_at, created_at, updated_at, email'
+  'id, alias, city_id, avatar_url, description, privacy_settings, publication_link, phone, account_status, rejection_reason, role, is_active, last_seen_at, created_at, updated_at, email'
 
 const OWN_PROFILE_FALLBACK_COLUMNS =
   'id, alias, city_id, avatar_url, description, privacy_settings, role, is_active, last_seen_at, created_at, updated_at, email'
@@ -26,11 +31,11 @@ const PUBLIC_PROFILE_COLUMNS =
   'id, alias, city_id, avatar_url, description, privacy_settings, created_at'
 
 const ADMIN_PROFILE_COLUMNS =
-  'id, alias, email, city_id, role, is_active, account_status, publication_link, rejection_reason, reviewed_at, created_at, city:cities!city_id(id, name)'
+  'id, alias, email, phone, city_id, role, is_active, account_status, publication_link, rejection_reason, reviewed_at, created_at, city:cities!city_id(id, name)'
 
 export interface UpdateProfileInput {
   alias?: string
-  city_id?: string
+  city_id?: string | null
   description?: string | null
   avatar_url?: string | null
   privacy_settings?: PrivacySettings
@@ -159,6 +164,20 @@ export const profileService = {
     const { data, error } = await supabase.rpc('is_email_blocked', { p_email: email })
     if (error) throw error
     return data as boolean
+  },
+
+  async getEmailByPhone(phone: string): Promise<string | null> {
+    const { data, error } = await supabase.rpc('get_auth_email_by_phone', { p_phone: phone })
+    if (error) throw error
+    return (data as string | null) ?? null
+  },
+
+  async createUserAsAdmin(input: CreateUserAsAdminInput): Promise<CreateUserAsAdminResult> {
+    const { data, error } = await supabase.functions.invoke('admin-create-user', {
+      body: input,
+    })
+    if (error) throw error
+    return data as CreateUserAsAdminResult
   },
 
   async reviewAccount(

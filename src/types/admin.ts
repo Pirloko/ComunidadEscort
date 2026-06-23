@@ -18,7 +18,8 @@ export interface AdminProfile {
   id: string
   alias: string
   email: string
-  city_id: string
+  phone: string | null
+  city_id: string | null
   role: UserRole
   is_active: boolean
   account_status: AccountStatus
@@ -27,6 +28,19 @@ export interface AdminProfile {
   reviewed_at: string | null
   created_at: string
   city?: { id: string; name: string }
+}
+
+export interface CreateUserAsAdminInput {
+  alias: string
+  email: string
+  phone: string
+  publication_link: string
+  city_id?: string
+}
+
+export interface CreateUserAsAdminResult {
+  email: string
+  temporaryPassword: string
 }
 
 export interface ReviewAccountInput {

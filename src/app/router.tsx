@@ -3,6 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProtectedRoute, GuestRoute } from '@/components/shared/ProtectedRoute'
 import { ActiveAccountRoute, PendingAccountRoute } from '@/components/shared/AccountStatusGate'
+import {
+  MustChangePasswordRoute,
+  RequirePasswordChangeDone,
+} from '@/components/shared/MustChangePasswordGate'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { PageLoader } from '@/components/shared/PageLoader'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
@@ -146,6 +150,11 @@ const PendingAccountPage = lazy(() =>
     default: m.PendingAccountPage,
   })),
 )
+const ChangePasswordRequiredPage = lazy(() =>
+  import('@/features/auth/pages/ChangePasswordRequiredPage').then((m) => ({
+    default: m.ChangePasswordRequiredPage,
+  })),
+)
 
 export function AppRouter() {
   return (
@@ -158,6 +167,13 @@ export function AppRouter() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route element={<ProtectedRoute />}>
+        <Route element={<MustChangePasswordRoute />}>
+          <Route
+            path="/cambiar-password-obligatorio"
+            element={<S><ChangePasswordRequiredPage /></S>}
+          />
+        </Route>
+        <Route element={<RequirePasswordChangeDone />}>
         <Route
           path="/cuenta-pendiente"
           element={
@@ -218,6 +234,7 @@ export function AppRouter() {
         <Route path="/profile/edit" element={<S><EditProfilePage /></S>} />
         <Route path="/profile/:alias" element={<S><ProfilePage /></S>} />
         <Route path="/settings" element={<S><SettingsPage /></S>} />
+        </Route>
         </Route>
         </Route>
       </Route>

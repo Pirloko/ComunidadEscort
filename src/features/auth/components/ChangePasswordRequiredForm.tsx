@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/features/auth/schemas/auth.schema'
 import { authService } from '@/services/auth.service'
 
-export function ResetPasswordForm() {
+export function ChangePasswordRequiredForm() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
 
@@ -23,8 +23,8 @@ export function ResetPasswordForm() {
   const onSubmit = async (data: ResetPasswordFormData) => {
     setError(null)
     try {
-      await authService.updatePassword(data.password)
-      navigate('/login', { replace: true })
+      await authService.completeForcedPasswordChange(data.password)
+      navigate('/feed', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar la contraseña')
     }
@@ -33,6 +33,10 @@ export function ResetPasswordForm() {
   return (
     <Card>
       <CardContent className="pt-6">
+        <p className="mb-4 text-sm text-muted-foreground">
+          Tu cuenta fue creada por una administradora con una contraseña temporal. Antes de
+          continuar, debes elegir una contraseña propia.
+        </p>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
@@ -57,14 +61,8 @@ export function ResetPasswordForm() {
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Actualizar contraseña
+            Guardar y continuar
           </Button>
-
-          <p className="text-center text-sm text-muted-foreground">
-            <Link to="/login" className="text-accent hover:underline">
-              Volver al login
-            </Link>
-          </p>
         </form>
       </CardContent>
     </Card>

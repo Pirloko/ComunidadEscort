@@ -6,7 +6,7 @@ export const editProfileSchema = z.object({
     .min(3, 'El alias debe tener al menos 3 caracteres')
     .max(30, 'El alias no puede superar 30 caracteres')
     .regex(/^[a-zA-Z0-9_áéíóúñÁÉÍÓÚÑ]+$/, 'Solo letras, números y guión bajo'),
-  city_id: z.string().uuid('Selecciona una ciudad'),
+  city_id: z.string().uuid('Selecciona una ciudad').optional().or(z.literal('')),
   description: z
     .string()
     .max(500, 'La descripción no puede superar 500 caracteres')

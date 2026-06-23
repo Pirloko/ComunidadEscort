@@ -30,7 +30,7 @@ export function ProfileEditForm({ profile, cities, onSuccess }: ProfileEditFormP
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
       alias: profile.alias,
-      city_id: profile.city_id,
+      city_id: profile.city_id ?? '',
       description: profile.description ?? '',
     },
   })
@@ -49,7 +49,7 @@ export function ProfileEditForm({ profile, cities, onSuccess }: ProfileEditFormP
 
       const updated = await profileService.updateProfile(profile.id, {
         alias: data.alias,
-        city_id: data.city_id,
+        city_id: data.city_id || null,
         description: data.description || null,
         avatar_url: avatarUrl,
       })
@@ -86,6 +86,7 @@ export function ProfileEditForm({ profile, cities, onSuccess }: ProfileEditFormP
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           {...register('city_id')}
         >
+          <option value="">Sin asignar</option>
           {cities.map((city) => (
             <option key={city.id} value={city.id}>
               {city.name}

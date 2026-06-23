@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Users } from 'lucide-react'
+import { UserPlus, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { UserRow } from '@/features/admin/components/UserRow'
+import { CreateUserModal } from '@/features/admin/components/CreateUserModal'
 import { profileService } from '@/services/profile.service'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +16,7 @@ export function AdminUsersPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const onlyPending = searchParams.get('pending') === '1'
   const [search, setSearch] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users', search, onlyPending],
@@ -37,9 +39,15 @@ export function AdminUsersPage() {
   return (
     <Card>
       <CardHeader className="space-y-3">
-        <CardTitle className="text-base">
-          Usuarios ({users.length})
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">
+            Usuarios ({users.length})
+          </CardTitle>
+          <Button type="button" size="sm" className="gap-1" onClick={() => setShowCreateModal(true)}>
+            <UserPlus className="h-4 w-4" />
+            Crear usuario
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -89,6 +97,8 @@ export function AdminUsersPage() {
           <UserRow key={user.id} user={user} />
         ))}
       </CardContent>
+
+      {showCreateModal && <CreateUserModal onClose={() => setShowCreateModal(false)} />}
     </Card>
   )
 }

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,15 +10,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { registerSchema, type RegisterFormData } from '@/features/auth/schemas/auth.schema'
 import { authService, cityService } from '@/services/auth.service'
 import { profileService } from '@/services/profile.service'
+import { normalizePhoneChile } from '@/lib/phone'
 
 export function RegisterForm() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-
-  const { data: cities = [], isLoading: citiesLoading } = useQuery({
-    queryKey: ['public-cities'],
-    queryFn: () => cityService.getPublicCities(),
-  })
 
   const {
     register,
@@ -46,7 +41,7 @@ export function RegisterForm() {
         data.email,
         data.password,
         data.alias,
-        data.city_id,
+        normalizePhoneChile(data.phone),
         data.publication_link,
       )
       setSuccess(true)
@@ -91,22 +86,9 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="city_id">Ciudad</Label>
-            <select
-              id="city_id"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-              {...register('city_id')}
-              disabled={citiesLoading}
-            >
-              <option value="">Selecciona tu ciudad</option>
-              {cities.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.name}
-                  {city.region_name ? ` — ${city.region_name}` : ''}
-                </option>
-              ))}
-            </select>
-            {errors.city_id && <p className="text-sm text-destructive">{errors.city_id.message}</p>}
+            <Label htmlFor="phone">Celular</Label>
+            <Input id="phone" type="tel" placeholder="+56 9 1234 5678" {...register('phone')} />
+            {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -137,6 +119,9 @@ export function RegisterForm() {
             <Label htmlFor="password">Contraseña</Label>
             <Input id="password" type="password" placeholder="••••••••" {...register('password')} />
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+            <p className="text-xs text-muted-foreground">
+              Mínimo 6 caracteres, con al menos 1 mayúscula y 1 número o símbolo.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -147,7 +132,7 @@ export function RegisterForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" variant="accent" disabled={isSubmitting || citiesLoading}>
+          <Button type="submit" className="w-full" variant="accent" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
             Crear cuenta
           </Button>

@@ -64,7 +64,7 @@ export interface PrivacySettings {
 export interface PublicProfile {
   id: string
   alias: string
-  city_id: string
+  city_id: string | null
   avatar_url: string | null
   description: string | null
   privacy_settings: PrivacySettings
@@ -73,6 +73,7 @@ export interface PublicProfile {
 
 export interface Profile extends PublicProfile {
   email: string
+  phone: string | null
   publication_link: string | null
   account_status: AccountStatus
   rejection_reason: string | null

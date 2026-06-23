@@ -37,7 +37,7 @@ export function ProfilePage() {
   const { data: cityMembers = [] } = useQuery({
     queryKey: ['members', ownProfile?.city_id, user?.id, 'profile-preview'],
     queryFn: () =>
-      profileService.getMembersByCity(ownProfile!.city_id, {
+      profileService.getMembersByCity(ownProfile!.city_id!, {
         excludeUserId: user?.id,
         limit: 5,
       }),
