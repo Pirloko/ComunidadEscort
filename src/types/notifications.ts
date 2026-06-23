@@ -42,6 +42,8 @@ export function getNotificationRoute(notification: Notification): string {
       return '/cuenta-pendiente'
     case 'new_message':
       return data.conversation_id ? `/chat/${data.conversation_id}` : '/chat'
+    case 'mention':
+      return data.post_id ? `/forum/${data.post_id}` : '/forum'
     default:
       return '/notifications'
   }
