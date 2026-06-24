@@ -27,7 +27,7 @@ Guía de contexto para Claude Code al trabajar en este repositorio. **Responde s
 - **No over-engineering**: sin abstracciones prematuras, helpers de una línea ni manejo de errores para casos imposibles.
 - **Seguir convenciones existentes**: leer el código circundante antes de escribir; imitar naming, patrones de services, guards, schemas y estilo UI.
 - **Comentarios**: solo para lógica de negocio no obvia; el código debe ser mayormente autoexplicativo.
-- **Tests**: no hay runner configurado — no asumir `npm test`; no añadir tests salvo que se pidan explícitamente.
+- **Tests**: no hay unit test runner (sin Jest/Vitest) — no asumir `npm test`. Sí hay E2E con Playwright (`npm run test:e2e`, ver sección "Testing E2E"); no añadir specs nuevos salvo que se pidan explícitamente.
 
 ### Git y despliegue
 - **No commitear** salvo petición explícita del usuario.
@@ -78,9 +78,10 @@ npm run dev       # Vite dev server (localhost:5173)
 npm run build     # tsc -b + vite build
 npm run lint      # eslint .
 npm run preview   # preview del build de producción
+npm run test:e2e  # Playwright E2E contra prod (ver sección "Testing E2E")
 ```
 
-**No existe `npm test`** (sin Jest/Vitest en `package.json`).
+**No existe `npm test`** (sin Jest/Vitest en `package.json`) — los tests automatizados son E2E con Playwright.
 
 ---
 
@@ -98,6 +99,60 @@ Copiar `.env.example` → `.env`:
 `src/lib/supabase/client.ts` usa placeholders si faltan vars → la app arranca pero Supabase falla.
 
 Supabase cloud ref: `dxlqnlznhmeslzbxibhn.supabase.co` (según `.env.example`).
+
+---
+
+## Testing E2E (Playwright)
+
+No hay unit tests (sin Jest/Vitest), pero sí una suite E2E con **Playwright** en `e2e/` que corre
+contra `comunidadescort.netlify.app` (prod) — no hay entorno de staging.
+
+```bash
+npm run test:e2e      # playwright test (headless, chromium)
+npm run test:e2e:ui   # playwright test --ui (modo interactivo)
+```
+
+Config en `playwright.config.ts`: `workers: 1` y `fullyParallel: false` a propósito — los tests
+comparten cuentas reales (`E2E_ADMIN_EMAIL`/`E2E_USER_EMAIL`) y mutan datos en prod, correr en
+paralelo arriesgaría condiciones de carrera entre specs.
+
+### Variables de entorno
+
+Copiar y completar `.env.e2e.local` (gitignored vía `*.local`, **nunca commitear**):
+
+| Variable | Uso |
+|----------|-----|
+| `E2E_BASE_URL` | URL base (prod: `https://comunidadescort.netlify.app`) |
+| `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` | Cuenta real con rol `admin` |
+| `E2E_USER_EMAIL` / `E2E_USER_PASSWORD` | Cuenta real con rol `user` |
+
+### Specs (`e2e/`)
+
+| Spec | Cubre |
+|------|-------|
+| `auth-admin.spec.ts` | Admin crea un dato en Datos de todo (queda `aprobada` de inmediato) y lo elimina al final |
+| `auth-user-permissions.spec.ts` | Usuario regular no ve botones de creación ni accede a `/resources/new`; sí puede comentar y reseñar un dato (creado y borrado por el propio test vía admin) |
+| `notifications.spec.ts` | Campana → "Ver todas" → `/notifications` renderiza sin pantalla blanca |
+| `phone-validation.spec.ts` | Validación de celular chileno en tiempo real (`onBlur`) en registro y en el modal admin "Crear usuario" — sin enviar el formulario |
+| `admin-create-user.spec.ts` | Creación de usuario vía Edge Function `admin-create-user`, condicionada a que esté desplegada |
+
+### Datos de prueba en prod
+
+Todo dato creado por los tests se nombra con prefijo **`[PRUEBA]`** y cada spec lo borra al final
+vía la propia UI (botón "Eliminar"), salvo `admin-create-user.spec.ts`: crea una cuenta real en
+`auth.users` (alias `prueba_e2e_<timestamp>`, email `prueba.e2e.<timestamp>@example.com`) y **no
+hay botón de borrado de usuarios en la UI admin** — limpiar manualmente con `DELETE FROM
+auth.users WHERE email = '...'` (cascada a `profiles` vía `ON DELETE CASCADE`, ver `00002`). Por
+eso esta spec se ejecuta solo cuando se vaya a hacer esa limpieza manual a continuación, no como
+parte de una corrida desatendida.
+
+### Limitación de red conocida
+
+Esta suite no pudo ejecutarse desde una red con un proxy/firewall de inspección TLS (detectado:
+red institucional con `search inacap.cl` en DNS) — el handshake TLS de Node/Chromium contra
+`comunidadescort.netlify.app` se resetea (`ECONNRESET`) aunque `curl` a la misma URL funciona
+normal. Si `npm run test:e2e` falla con `net::ERR_CONNECTION_CLOSED` en todos los specs por igual
+(no en selectores puntuales), sospechar de la red antes que del código — probar desde otra red.
 
 ---
 
@@ -485,7 +540,7 @@ report_status:       'pendiente' | 'resuelto' | 'descartado'
 3. **Flujo end-to-end de registro → aprobación → acceso** probado en prod/staging.
 
 ### Prioridad media
-4. Tests (Vitest + Testing Library) — infraestructura inexistente.
+4. Tests unitarios (Vitest + Testing Library) — infraestructura inexistente. E2E con Playwright ya existe (`e2e/`, ver sección "Testing E2E") para flujos críticos contra prod.
 5. Implementar `mention` en comentarios/posts.
 6. Cola de alertas pendientes: decidir si filtrar por ciudad o mantener global.
 7. Acción directa sobre el contenido reportado desde `/moderation/reports` (hoy solo enlaza a `/moderation/posts|comments|alerts`).
