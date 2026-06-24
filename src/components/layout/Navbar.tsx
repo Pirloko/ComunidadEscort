@@ -16,7 +16,7 @@ interface NavbarProps {
 export function Navbar({
   search = '',
   onSearchChange,
-  searchPlaceholder = 'Buscar alertas, recursos, publicaciones...',
+  searchPlaceholder = 'Buscar alertas, datos, publicaciones...',
 }: NavbarProps) {
   const { theme, toggleTheme } = useTheme()
 

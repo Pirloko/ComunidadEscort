@@ -111,7 +111,7 @@ export function ModerationDashboardPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Recursos pendientes recientes</CardTitle>
+          <CardTitle className="text-base">Datos pendientes recientes</CardTitle>
           {pendingResources.length > 0 && (
             <Button variant="ghost" size="sm" asChild>
               <Link to="/moderation/resources" className="gap-1">
@@ -128,7 +128,7 @@ export function ModerationDashboardPage() {
             <div className="flex flex-col items-center py-8 text-center">
               <MapPin className="h-10 w-10 text-muted-foreground/50" />
               <p className="mt-2 text-sm text-muted-foreground">
-                No hay recursos esperando revisión.
+                No hay datos esperando revisión.
               </p>
             </div>
           )}

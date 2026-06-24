@@ -15,17 +15,17 @@ export function CreateResourcePage() {
     <div className="mx-auto max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle>Agregar recurso</CardTitle>
+          <CardTitle>Agregar dato</CardTitle>
           <CardDescription>
-            Tu recomendación será revisada por una moderadora antes de publicarse en el
-            directorio de {selectedCity?.name ?? 'tu ciudad'}.
+            Solo moderadoras y admin publican datos verificados en Datos de todo de{' '}
+            {selectedCity?.name ?? 'tu ciudad'}. Se publica de inmediato, sin cola de revisión.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <ResourceForm
             cityId={selectedCityId}
             authorId={user.id}
-            onSuccess={() => navigate('/resources/mine')}
+            onSuccess={(resource) => navigate(`/resources/${resource.id}`)}
           />
         </CardContent>
       </Card>

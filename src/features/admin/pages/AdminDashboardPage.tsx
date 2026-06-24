@@ -41,7 +41,7 @@ export function AdminDashboardPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Recursos pendientes de verificación</CardTitle>
+          <CardTitle className="text-base">Datos pendientes de verificación</CardTitle>
           {(stats?.unverifiedResources ?? 0) > 0 && (
             <Button variant="ghost" size="sm" asChild>
               <Link to="/admin/resources" className="gap-1">
@@ -58,7 +58,7 @@ export function AdminDashboardPage() {
             <div className="flex flex-col items-center py-8 text-center">
               <Building2 className="h-10 w-10 text-muted-foreground/50" />
               <p className="mt-2 text-sm text-muted-foreground">
-                Todos los recursos están verificados.
+                Todos los datos están verificados.
               </p>
             </div>
           )}

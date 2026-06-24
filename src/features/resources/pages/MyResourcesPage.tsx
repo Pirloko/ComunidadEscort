@@ -20,9 +20,9 @@ export function MyResourcesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Mis recursos</h1>
+        <h1 className="text-2xl font-bold">Datos que he publicado</h1>
         <p className="text-muted-foreground">
-          Entradas del directorio que has enviado y su estado de revisión.
+          Entradas de Datos de todo que has publicado como moderadora o admin.
         </p>
       </div>
 
@@ -36,11 +36,11 @@ export function MyResourcesPage() {
       {!isLoading && resources.length === 0 && (
         <EmptyState
           icon={MapPin}
-          title="No has agregado recursos"
-          description="Cuando recomiendes un servicio, aparecerá aquí hasta que una moderadora lo apruebe."
+          title="No has publicado datos"
+          description="Cuando agregues un dato a Datos de todo, aparecerá aquí."
           action={
             <Link to="/resources/new">
-              <Button variant="accent">Agregar recurso</Button>
+              <Button variant="accent">Agregar dato</Button>
             </Link>
           }
         />

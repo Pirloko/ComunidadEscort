@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { to: '/feed', label: 'Inicio', icon: Home },
   { to: '/forum', label: 'Foro', icon: MessageSquare },
   { to: '/alerts', label: 'Alertas', icon: ShieldAlert },
-  { to: '/resources', label: 'Directorio', icon: MapPin },
+  { to: '/resources', label: 'Datos de todo', icon: MapPin },
   { to: '/chat', label: 'Mensajes', icon: MessageCircle, match: '/chat' },
   { to: '/members', label: 'Miembros', icon: Users, match: '/members' },
   { to: '/bookmarks', label: 'Guardados', icon: Bookmark, match: '/bookmarks' },

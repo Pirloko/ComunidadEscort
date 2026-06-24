@@ -43,14 +43,14 @@ const CARDS = [
   },
   {
     key: 'unverifiedResources' as const,
-    label: 'Recursos sin verificar',
+    label: 'Datos sin verificar',
     icon: Building2,
     color: 'text-destructive',
     href: '/admin/resources',
   },
   {
     key: 'totalResources' as const,
-    label: 'Recursos totales',
+    label: 'Datos totales',
     icon: Building2,
     color: 'text-muted-foreground',
     href: '/admin/resources',

@@ -23,6 +23,14 @@ export interface Resource {
   phone: string | null
   address: string | null
   website: string | null
+  latitude: number | null
+  longitude: number | null
+  google_maps_url: string | null
+  instagram_url: string | null
+  facebook_url: string | null
+  whatsapp_phone: string | null
+  rating_avg: number | null
+  reviews_count: number
   is_verified: boolean
   is_active: boolean
   reviewed_by: string | null
@@ -42,6 +50,12 @@ export interface CreateResourceInput {
   phone?: string | null
   address?: string | null
   website?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  google_maps_url?: string | null
+  instagram_url?: string | null
+  facebook_url?: string | null
+  whatsapp_phone?: string | null
 }
 
 export interface UpdateResourceInput {
@@ -51,6 +65,12 @@ export interface UpdateResourceInput {
   phone?: string | null
   address?: string | null
   website?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  google_maps_url?: string | null
+  instagram_url?: string | null
+  facebook_url?: string | null
+  whatsapp_phone?: string | null
   is_verified?: boolean
   is_active?: boolean
 }

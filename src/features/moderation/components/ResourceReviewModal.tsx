@@ -74,7 +74,7 @@ export function ResourceReviewModal({ resource, onClose }: ResourceReviewModalPr
       <div className="absolute inset-0" onClick={onClose} aria-hidden />
       <div className="relative z-10 w-full max-w-lg rounded-xl border bg-card shadow-xl">
         <div className="flex items-center justify-between border-b px-5 py-4">
-          <h2 className="font-semibold">Revisar recurso</h2>
+          <h2 className="font-semibold">Revisar dato</h2>
           <button
             type="button"
             onClick={onClose}

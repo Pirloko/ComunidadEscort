@@ -235,6 +235,8 @@ canAccessCommunity(profile):
 
 **Nota:** coexisten `account_status` e `is_active` por compatibilidad histórica. Al aprobar/rechazar, `profileService.reviewAccount` sincroniza ambos. Preferir `account_status` como fuente de verdad; `is_active` se actualiza en paralelo.
 
+**Mirror en SQL:** `has_community_access()` (`00034_rls_resources_datos_de_todo.sql`) replica esta misma lógica server-side para RLS de `resource_comments`/`resource_reviews` — mantener sincronizados si cambia `canAccessCommunity`.
+
 ### Staff
 Trigger `ensure_staff_account_active`: al asignar rol `admin`/`moderator`, fuerza `is_active=true` y `account_status='aprobada'`.
 
@@ -256,10 +258,10 @@ RLS de `profiles` (`profiles_update_own`, `00009`) permite `UPDATE` de cualquier
 |--------|-------|-------|----------------|
 | Aprobar/rechazar/bloquear **cuentas** | Admin | `/admin/users` | Sí — registro queda `pendiente` |
 | Aprobar/rechazar **alertas** | Mod + Admin | `/moderation/alerts` | Sí — `status: pendiente` |
-| Aprobar/rechazar **recursos nuevos** | Mod + Admin | `/moderation/resources` | Sí — `status: pendiente` |
+| Crear/editar **datos de todo** | Mod + Admin | `/resources/new`, `/resources/:id/edit` | No — se publica `aprobada` de inmediato |
 | Resolver/descartar **reportes** de posts, comentarios y alertas | Mod + Admin | `/moderation/reports` | Sí — `status: pendiente` |
-| Verificar recurso (`is_verified`) | Admin | `/admin/resources` | No — badge de confianza post-aprobación |
-| Activar/desactivar recurso | Admin | `/admin/resources` | — |
+| Verificar dato (`is_verified`) | Admin | `/admin/resources` | No — badge de confianza post-aprobación |
+| Activar/desactivar dato | Admin | `/admin/resources` | — |
 | Fijar/bloquear/eliminar **posts** | Mod + Admin | `/moderation/posts` | No — posts publican al instante |
 | Eliminar **comentarios** | Mod + Admin | `/moderation/comments` | No — comentarios publican al instante |
 | Gestionar **ciudades** | Admin | `/admin/cities` | — |
@@ -286,18 +288,30 @@ Usuario crea alerta → status=pendiente → Cola global (no filtrada por ciudad
 ```
 Autor puede editar alerta solo mientras `status=pendiente`.
 
-### Flujo: recursos del directorio (Moderación + Admin)
+### Flujo: "Datos de todo" — ex directorio de recursos (migración `00031`–`00035`)
 ```
-Usuario crea recurso → status=pendiente → Cola en /moderation/resources
-  → Mod/Admin aprueba/rechaza (status + reviewed_by/at)
-  → Trigger notify_resource_status_change → notificación al autor
-  → Recurso aprobado visible en /resources (status=aprobada, is_active=true)
+Mod/Admin crea dato en /resources/new → status=aprobada directo (sin cola)
+  → RLS resources_insert_staff exige is_moderator_or_admin() AND status='aprobada'
+  → Visible de inmediato en /resources (is_active=true)
 
-Post-aprobación (Admin en /admin/resources):
+Post-publicación (Admin en /admin/resources):
   → is_verified=true: badge “Verificado”, orden prioritario en listados
   → is_active toggle: ocultar/mostrar sin borrar
+
+Edición: solo Mod/Admin (RoleGuard en /resources/:id/edit + RLS resources_mod_review,
+sin filtro de autoría ni de status — puede editar cualquier dato, no solo el propio).
+Usuarias normales: solo lectura, comentan (resource_comments) y dejan reseña con
+estrellas (resource_reviews, una por usuaria por dato — reenviar actualiza la propia).
+/moderation/resources sigue funcionando para filas legacy con status=pendiente
+creadas antes de `00034` (usuarias ya no pueden crear nuevas).
 ```
-Autor puede editar recurso solo mientras `status=pendiente`.
+Categorías (`resource_category`, migración `00031`): `delivery`, `farmacia`,
+`botilleria`, `carniceria`, `supermercado`, `taxis_uber`, `salud`, `juridico`,
+`habitaciones_escort`, `hoteles`, `tours_ciudad`, `gym`, `otros`. Campos nuevos en
+`resources` (`00033`): `latitude`, `longitude`, `google_maps_url`, `instagram_url`,
+`facebook_url`, `whatsapp_phone` (normalizado con `normalizePhoneChile`),
+`rating_avg`/`reviews_count` (denormalizados, recalculados por trigger
+`update_resource_rating` en `00035` ante cualquier cambio en `resource_reviews`).
 
 ### Flujo: reportes de contenido (Moderación)
 ```
@@ -339,8 +353,8 @@ recursos y **reportes** (`pending-reports-count`, refetch 30s) — no están en 
 
 ## Capa de datos (Supabase)
 
-### Services (13 archivos)
-`auth`, `profile`, `city`, `post`, `comment`, `alert`, `resource`, `chat`, `notification`, `bookmark`, `moderation`, `admin`, `report`.
+### Services (15 archivos)
+`auth`, `profile`, `city`, `post`, `comment`, `alert`, `resource`, `resource-comment`, `resource-review`, `chat`, `notification`, `bookmark`, `moderation`, `admin`, `report`.
 
 ### RPCs existentes
 | RPC | Uso |
@@ -398,15 +412,16 @@ Aplicar en **orden de filename** en Supabase SQL Editor.
 | 1–2 | Regiones, ciudades, perfiles | `00001`, `00002` |
 | 3 | Foro (posts, comments, likes) | `00003`, `00009c`, `00013a` |
 | 4 | Alertas | `00004`, `00009d`, `00013b` |
-| 5 | Directorio de recursos | `00005`, `00009e`, `00013c` |
+| 5 | Datos de todo (ex "Directorio de recursos") | `00005`, `00009e`, `00013c` |
 | 6 | Chat 1:1 | `00008`, `00009f`, `00013d`, `00014`, `00017` |
 | 7 | Notificaciones | `00007`, `00009g`, `00013g`, `00015` |
 | 10 | Bookmarks | `00006`, `00009h` |
 | — | RLS base, triggers core, seed, storage | `00009`, `00010`, `00011`, `00012`, `00013` |
 | Post-MVP | Moderación recursos, aprobación cuentas, reportes, menciones | `00018`–`00026` |
 | Post-MVP | Teléfono + ciudad opcional, login por celular, defensa en profundidad RLS, fixes de seguridad | `00027`–`00030` |
+| Post-MVP | "Datos de todo": categorías nuevas, solo staff crea, ubicación/redes, comentarios y reseñas con estrellas | `00031`–`00035` |
 
-**Lista completa:** `00001` … `00030` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
+**Lista completa:** `00001` … `00035` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
 
 **Convención al añadir features:**
 1. `000XX_<feature>.sql` — tablas/columnas
@@ -423,7 +438,9 @@ account_status:      'pendiente' | 'aprobada' | 'rechazada' | 'bloqueada'
 alert_status:        'pendiente' | 'aprobada' | 'rechazada'
 post_category:       'seguridad' | 'consejos' | 'salud' | 'bienestar' | 'transporte' | 'recursos_utiles' | 'conversaciones_generales'
 alert_category:      'estafa' | 'robo' | 'incidente_seguridad' | 'advertencia' | 'otro'
-resource_category:   'delivery' | 'farmacias' | 'supermercados' | 'transporte' | 'salud' | 'juridico' | 'hospedaje' | 'otros'
+resource_category:   'delivery' | 'farmacia' | 'botilleria' | 'carniceria' | 'supermercado' | 'taxis_uber' | 'salud' | 'juridico' | 'habitaciones_escort' | 'hoteles' | 'tours_ciudad' | 'gym' | 'otros'
+  -- 'hospedaje' sigue en el enum de Postgres (huérfano, Postgres no permite DROP VALUE)
+  -- pero ya no está en el tipo TS ResourceCategory ni se usa en la app (datos migrados a 'hoteles' en 00032)
 bookmark_type:       'post' | 'resource' | 'alert'
 report_target_type:  'post' | 'comment' | 'alert'
 report_reason:       'spam' | 'contenido_inapropiado' | 'acoso' | 'informacion_falsa' | 'otro'

@@ -5,6 +5,9 @@ import {
   MapPin,
   Phone,
   Globe,
+  ExternalLink,
+  MessageCircle,
+  Map,
   Pencil,
   Trash2,
   BadgeCheck,
@@ -14,11 +17,16 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ResourceCategoryBadge } from '@/features/resources/components/ResourceCategoryBadge'
+import { ResourceCommentThread } from '@/features/resources/components/ResourceCommentThread'
+import { ResourceReviewSection } from '@/features/resources/components/ResourceReviewSection'
 import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
+import { StarRating } from '@/components/shared/StarRating'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime } from '@/lib/format'
 import { resourceService } from '@/services/resource.service'
+import { resourceCommentService } from '@/services/resource-comment.service'
+import { resourceReviewService } from '@/services/resource-review.service'
 
 export function ResourceDetailPage() {
   const { resourceId } = useParams<{ resourceId: string }>()
@@ -31,13 +39,31 @@ export function ResourceDetailPage() {
     enabled: !!resourceId,
   })
 
+  const { data: comments = [] } = useQuery({
+    queryKey: ['resource-comments', resourceId],
+    queryFn: () => resourceCommentService.getCommentsByResource(resourceId!),
+    enabled: !!resourceId,
+  })
+
+  const { data: reviews = [] } = useQuery({
+    queryKey: ['resource-reviews', resourceId],
+    queryFn: () => resourceReviewService.getReviewsByResource(resourceId!),
+    enabled: !!resourceId,
+  })
+
   const isAuthor = user?.id === resource?.author_id
   const isMod = profile?.role === 'moderator' || profile?.role === 'admin'
   const canView =
     (resource?.status === 'aprobada' && resource?.is_active) || isAuthor || isMod
 
+  const mapsUrl =
+    resource?.google_maps_url ||
+    (resource?.latitude && resource?.longitude
+      ? `https://www.google.com/maps?q=${resource.latitude},${resource.longitude}`
+      : null)
+
   const handleDelete = async () => {
-    if (!resource || !confirm('¿Eliminar este recurso?')) return
+    if (!resource || !confirm('¿Eliminar este dato?')) return
     await resourceService.deleteResource(resource.id)
     navigate('/resources')
   }
@@ -52,7 +78,7 @@ export function ResourceDetailPage() {
   }
 
   if (isError || !resource || !canView) {
-    return <ErrorState title="Recurso no encontrado" onRetry={() => refetch()} />
+    return <ErrorState title="Dato no encontrado" onRetry={() => refetch()} />
   }
 
   return (
@@ -62,7 +88,7 @@ export function ResourceDetailPage() {
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Volver al directorio
+        Volver a Datos de todo
       </Link>
 
       <Card>
@@ -80,6 +106,15 @@ export function ResourceDetailPage() {
                 )}
               </div>
               <h1 className="mt-3 text-2xl font-bold">{resource.name}</h1>
+              {resource.reviews_count > 0 && (
+                <div className="mt-1 flex items-center gap-1.5">
+                  <StarRating value={resource.rating_avg ?? 0} size="sm" />
+                  <span className="text-xs text-muted-foreground">
+                    {resource.rating_avg} ({resource.reviews_count} reseña
+                    {resource.reviews_count !== 1 ? 's' : ''})
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 {resource.city && (
                   <span className="flex items-center gap-1">
@@ -103,7 +138,7 @@ export function ResourceDetailPage() {
 
           {resource.status === 'pendiente' && isAuthor && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950/30">
-              Tu recurso está <strong>pendiente de revisión</strong>. Te notificaremos cuando sea
+              Este dato está <strong>pendiente de revisión</strong>. Te notificaremos cuando sea
               aprobado o rechazado.
             </div>
           )}
@@ -125,11 +160,33 @@ export function ResourceDetailPage() {
                   {resource.phone}
                 </a>
               )}
+              {resource.whatsapp_phone && (
+                <a
+                  href={`https://wa.me/${resource.whatsapp_phone.replace('+', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm hover:text-accent"
+                >
+                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                  WhatsApp: {resource.whatsapp_phone}
+                </a>
+              )}
               {resource.address && (
                 <p className="flex items-start gap-2 text-sm">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   {resource.address}
                 </p>
+              )}
+              {mapsUrl && (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-accent hover:underline"
+                >
+                  <Map className="h-4 w-4" />
+                  Ver en Google Maps
+                </a>
               )}
               {resource.website && (
                 <a
@@ -142,18 +199,40 @@ export function ResourceDetailPage() {
                   {resource.website}
                 </a>
               )}
+              {resource.instagram_url && (
+                <a
+                  href={resource.instagram_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-accent hover:underline"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Instagram
+                </a>
+              )}
+              {resource.facebook_url && (
+                <a
+                  href={resource.facebook_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-accent hover:underline"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Facebook
+                </a>
+              )}
             </div>
           )}
 
           {resource.author && resource.status === 'aprobada' && (
             <p className="text-sm text-muted-foreground">
-              Recomendado por @{resource.author.alias}
+              Publicado por @{resource.author.alias}
             </p>
           )}
 
           {(isAuthor || isMod) && (
             <div className="flex gap-2 border-t pt-4">
-              {isAuthor && resource.status === 'pendiente' && (
+              {isMod && (
                 <Link to={`/resources/${resource.id}/edit`}>
                   <Button variant="outline" size="sm">
                     <Pencil className="mr-1 h-4 w-4" />
@@ -167,6 +246,24 @@ export function ResourceDetailPage() {
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold">Reseñas</h2>
+        </CardHeader>
+        <CardContent>
+          <ResourceReviewSection resourceId={resource.id} reviews={reviews} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold">Comentarios</h2>
+        </CardHeader>
+        <CardContent>
+          <ResourceCommentThread resourceId={resource.id} comments={comments} />
         </CardContent>
       </Card>
     </div>

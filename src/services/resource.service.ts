@@ -9,7 +9,9 @@ import type {
 
 const RESOURCE_SELECT = `
   id, author_id, city_id, category, status, name, description,
-  phone, address, website, is_verified, is_active,
+  phone, address, website, latitude, longitude, google_maps_url,
+  instagram_url, facebook_url, whatsapp_phone, rating_avg, reviews_count,
+  is_verified, is_active,
   reviewed_by, reviewed_at, rejection_reason,
   created_at, updated_at,
   author:profiles!author_id(id, alias, avatar_url),
@@ -97,7 +99,7 @@ export const resourceService = {
   async createResource(authorId: string, input: CreateResourceInput): Promise<Resource> {
     const { data, error } = await supabase
       .from('resources')
-      .insert({ ...input, author_id: authorId, status: 'pendiente' })
+      .insert({ ...input, author_id: authorId, status: 'aprobada' })
       .select(RESOURCE_SELECT)
       .single()
 
@@ -110,22 +112,6 @@ export const resourceService = {
       .from('resources')
       .update(input)
       .eq('id', resourceId)
-      .select(RESOURCE_SELECT)
-      .single()
-
-    if (error) throw error
-    return data as unknown as Resource
-  },
-
-  async updatePendingResource(
-    resourceId: string,
-    input: UpdateResourceInput,
-  ): Promise<Resource> {
-    const { data, error } = await supabase
-      .from('resources')
-      .update(input)
-      .eq('id', resourceId)
-      .eq('status', 'pendiente')
       .select(RESOURCE_SELECT)
       .single()
 

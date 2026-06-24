@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ResourceCategoryBadge } from '@/features/resources/components/ResourceCategoryBadge'
 import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
+import { StarRating } from '@/components/shared/StarRating'
 import { truncateText } from '@/lib/format'
 import type { Resource } from '@/types/resources'
 
@@ -32,6 +33,15 @@ export function ResourceCard({ resource, showStatus = false }: ResourceCardProps
           </div>
 
           <h3 className="mt-3 font-semibold leading-snug">{resource.name}</h3>
+
+          {resource.reviews_count > 0 && (
+            <div className="mt-1 flex items-center gap-1.5">
+              <StarRating value={resource.rating_avg ?? 0} size="sm" />
+              <span className="text-xs text-muted-foreground">
+                {resource.rating_avg} ({resource.reviews_count})
+              </span>
+            </div>
+          )}
 
           {resource.description && (
             <p className="mt-1.5 flex-1 text-sm text-muted-foreground line-clamp-2">

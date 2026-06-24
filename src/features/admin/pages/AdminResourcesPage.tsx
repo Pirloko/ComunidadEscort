@@ -27,7 +27,7 @@ export function AdminResourcesPage() {
   return (
     <Card>
       <CardHeader className="space-y-3">
-        <CardTitle className="text-base">Recursos del directorio</CardTitle>
+        <CardTitle className="text-base">Datos de todo</CardTitle>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Input
             value={search}
@@ -68,11 +68,11 @@ export function AdminResourcesPage() {
         {!isLoading && resources.length === 0 && (
           <EmptyState
             icon={Building2}
-            title={onlyUnverified ? 'Sin recursos pendientes' : 'Sin recursos'}
+            title={onlyUnverified ? 'Sin datos pendientes' : 'Sin datos'}
             description={
               onlyUnverified
-                ? 'Todos los recursos activos están verificados.'
-                : 'No hay recursos que coincidan con la búsqueda.'
+                ? 'Todos los datos activos están verificados.'
+                : 'No hay datos que coincidan con la búsqueda.'
             }
           />
         )}

@@ -185,7 +185,7 @@ export function FeedPage() {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Recursos recomendados</CardTitle>
+                <CardTitle className="text-base">Datos de todo</CardTitle>
                 <Link to="/resources" className="text-xs text-accent hover:underline">
                   Ver todos
                 </Link>
@@ -195,17 +195,19 @@ export function FeedPage() {
               {resourcesLoading && <Skeleton className="h-20 w-full" />}
               {!resourcesLoading && resources.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Aún no hay recursos en esta ciudad.
+                  Aún no hay datos verificados en esta ciudad.
                 </p>
               )}
               {resources.slice(0, 3).map((resource) => (
                 <ResourceCard key={resource.id} resource={resource} />
               ))}
-              <Link to="/resources/new">
-                <Button variant="outline" size="sm" className="w-full gap-1">
-                  Agregar recurso <ArrowRight className="h-3 w-3" />
-                </Button>
-              </Link>
+              {(profile?.role === 'moderator' || profile?.role === 'admin') && (
+                <Link to="/resources/new">
+                  <Button variant="outline" size="sm" className="w-full gap-1">
+                    Agregar dato <ArrowRight className="h-3 w-3" />
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -7,7 +7,7 @@ import { moderationService } from '@/services/moderation.service'
 const TABS = [
   { to: '/moderation', label: 'Resumen', icon: LayoutDashboard, end: true },
   { to: '/moderation/alerts', label: 'Alertas', icon: ShieldAlert, countKey: 'alerts' as const },
-  { to: '/moderation/resources', label: 'Directorio', icon: MapPin, countKey: 'resources' as const },
+  { to: '/moderation/resources', label: 'Datos de todo', icon: MapPin, countKey: 'resources' as const },
   { to: '/moderation/reports', label: 'Reportes', icon: Flag, countKey: 'reports' as const },
   { to: '/moderation/posts', label: 'Publicaciones', icon: MessageSquare },
   { to: '/moderation/comments', label: 'Comentarios', icon: MessageCircle },
@@ -39,7 +39,7 @@ export function ModerationLayout() {
       <div>
         <h1 className="text-2xl font-bold">Panel de moderación</h1>
         <p className="text-muted-foreground">
-          Gestiona alertas, directorio, publicaciones y comentarios de la comunidad.
+          Gestiona alertas, Datos de todo, publicaciones y comentarios de la comunidad.
         </p>
       </div>
 

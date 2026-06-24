@@ -24,7 +24,7 @@ export function ModerationResourcesPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Recursos pendientes ({pending.length})
+            Datos pendientes ({pending.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -33,8 +33,8 @@ export function ModerationResourcesPage() {
           {!isLoading && pending.length === 0 && (
             <EmptyState
               icon={MapPin}
-              title="Sin recursos pendientes"
-              description="No hay entradas del directorio esperando revisión."
+              title="Sin datos pendientes"
+              description="No hay entradas de Datos de todo esperando revisión."
             />
           )}
 

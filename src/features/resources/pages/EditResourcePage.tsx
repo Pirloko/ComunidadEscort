@@ -11,7 +11,7 @@ import { resourceService } from '@/services/resource.service'
 export function EditResourcePage() {
   const { resourceId } = useParams<{ resourceId: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { selectedCityId } = useCity()
 
   const { data: resource, isLoading, isError } = useQuery({
@@ -20,25 +20,18 @@ export function EditResourcePage() {
     enabled: !!resourceId,
   })
 
-  if (isLoading) return <Skeleton className="mx-auto h-96 max-w-2xl rounded-xl" />
-  if (isError || !resource || resource.author_id !== user?.id) {
-    return <ErrorState title="No puedes editar este recurso" />
-  }
+  const isMod = profile?.role === 'moderator' || profile?.role === 'admin'
 
-  if (resource.status !== 'pendiente') {
-    return (
-      <ErrorState
-        title="No se puede editar"
-        message="Solo puedes editar recursos que aún están pendientes de revisión."
-      />
-    )
+  if (isLoading) return <Skeleton className="mx-auto h-96 max-w-2xl rounded-xl" />
+  if (isError || !resource || !isMod) {
+    return <ErrorState title="No puedes editar este dato" />
   }
 
   return (
     <div className="mx-auto max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle>Editar recurso</CardTitle>
+          <CardTitle>Editar dato</CardTitle>
         </CardHeader>
         <CardContent>
           <ResourceForm

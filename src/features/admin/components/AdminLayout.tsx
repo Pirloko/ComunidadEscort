@@ -8,7 +8,7 @@ const TABS = [
   { to: '/admin', label: 'Resumen', icon: LayoutDashboard, end: true },
   { to: '/admin/users', label: 'Usuarios', icon: Users },
   { to: '/admin/cities', label: 'Ciudades', icon: MapPin },
-  { to: '/admin/resources', label: 'Recursos', icon: Building2 },
+  { to: '/admin/resources', label: 'Datos de todo', icon: Building2 },
 ]
 
 export function AdminLayout() {
@@ -29,7 +29,7 @@ export function AdminLayout() {
       <div>
         <h1 className="text-2xl font-bold">Panel de administración</h1>
         <p className="text-muted-foreground">
-          Gestiona usuarios, ciudades y verificación de recursos.
+          Gestiona usuarios, ciudades y verificación de Datos de todo.
         </p>
       </div>
 

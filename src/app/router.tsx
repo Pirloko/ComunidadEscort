@@ -199,9 +199,30 @@ export function AppRouter() {
         <Route path="/alerts/mine" element={<S><MyAlertsPage /></S>} />
         <Route path="/alerts/:alertId" element={<S><AlertDetailPage /></S>} />
         <Route path="/resources" element={<S><ResourcesPage /></S>} />
-        <Route path="/resources/new" element={<S><CreateResourcePage /></S>} />
-        <Route path="/resources/mine" element={<S><MyResourcesPage /></S>} />
-        <Route path="/resources/:resourceId/edit" element={<S><EditResourcePage /></S>} />
+        <Route
+          path="/resources/new"
+          element={
+            <RoleGuard roles={['moderator', 'admin']}>
+              <S><CreateResourcePage /></S>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/resources/mine"
+          element={
+            <RoleGuard roles={['moderator', 'admin']}>
+              <S><MyResourcesPage /></S>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/resources/:resourceId/edit"
+          element={
+            <RoleGuard roles={['moderator', 'admin']}>
+              <S><EditResourcePage /></S>
+            </RoleGuard>
+          }
+        />
         <Route path="/resources/:resourceId" element={<S><ResourceDetailPage /></S>} />
         <Route path="/chat" element={<S><ChatPage /></S>} />
         <Route path="/chat/:conversationId" element={<S><ChatPage /></S>} />

@@ -16,7 +16,7 @@ const FILTERS: { value: BookmarkType | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos' },
   { value: 'post', label: 'Publicaciones' },
   { value: 'alert', label: 'Alertas' },
-  { value: 'resource', label: 'Recursos' },
+  { value: 'resource', label: 'Datos de todo' },
 ]
 
 export function BookmarksPage() {
@@ -34,7 +34,7 @@ export function BookmarksPage() {
       <div>
         <h1 className="text-2xl font-bold">Guardados</h1>
         <p className="text-muted-foreground">
-          Publicaciones, alertas y recursos que guardaste para revisar después.
+          Publicaciones, alertas y datos que guardaste para revisar después.
         </p>
       </div>
 
@@ -67,7 +67,7 @@ export function BookmarksPage() {
         <EmptyState
           icon={Bookmark}
           title="Sin guardados"
-          description="Toca el ícono de marcador en publicaciones, alertas o recursos para guardarlos aquí."
+          description="Toca el ícono de marcador en publicaciones, alertas o datos para guardarlos aquí."
         />
       )}
 
