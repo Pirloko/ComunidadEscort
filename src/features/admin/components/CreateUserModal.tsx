@@ -34,7 +34,10 @@ export function CreateUserModal({ onClose }: CreateUserModalProps) {
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm<AdminCreateUserFormData>({ resolver: zodResolver(adminCreateUserSchema) })
+  } = useForm<AdminCreateUserFormData>({
+    resolver: zodResolver(adminCreateUserSchema),
+    mode: 'onBlur',
+  })
 
   const createMutation = useMutation({
     mutationFn: (data: AdminCreateUserFormData) =>
@@ -133,6 +136,9 @@ export function CreateUserModal({ onClose }: CreateUserModalProps) {
                 <Label htmlFor="phone">Celular</Label>
                 <Input id="phone" type="tel" placeholder="+56 9 1234 5678" {...register('phone')} />
                 {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+                <p className="text-xs text-muted-foreground">
+                  Celular chileno: +56 9 seguido de 8 dígitos (ej: +56 9 1234 5678).
+                </p>
               </div>
 
               <div className="space-y-1">

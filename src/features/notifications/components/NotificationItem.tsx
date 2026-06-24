@@ -27,7 +27,7 @@ export function NotificationItem({ notification, onRead, compact }: Notification
         compact && 'py-2',
       )}
     >
-      <span className="mt-0.5 text-lg">{NOTIFICATION_ICONS[notification.type]}</span>
+      <span className="mt-0.5 text-lg">{NOTIFICATION_ICONS[notification.type] ?? '🔔'}</span>
       <div className="min-w-0 flex-1">
         <p className={cn('text-sm', !notification.is_read && 'font-semibold')}>
           {notification.title}

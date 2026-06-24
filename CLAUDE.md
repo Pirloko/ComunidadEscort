@@ -108,6 +108,19 @@ Supabase cloud ref: `dxlqnlznhmeslzbxibhn.supabase.co` (según `.env.example`).
 - **CI:** GitHub Actions (`.github/workflows/ci.yml`) — `checkout` → `npm ci` → `npm run lint` → `npm run build` en push/PR a `main`. No despliega; Netlify hace su propio build al detectar push a `main`.
 - Variables de entorno (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, etc.) deben configurarse también en el dashboard de Netlify, no solo en `.env` local.
 
+### Deploy de Edge Functions
+
+Netlify solo construye el frontend — las Edge Functions en `supabase/functions/` **no se despliegan solas** y requieren `supabase` CLI con sesión iniciada (`supabase login`) y el proyecto vinculado (`supabase link --project-ref dxlqnlznhmeslzbxibhn`):
+
+```bash
+supabase functions deploy admin-create-user
+supabase functions deploy login-with-phone
+```
+
+Si `admin-create-user` no está desplegada (o quedó desactualizada tras un cambio), el modal "Crear usuario" en `/admin/users` falla con el error genérico de Supabase ("Edge Function returned a non-2xx status code"); `profileService.createUserAsAdmin` ya intenta leer el mensaje específico del body de la función antes de mostrar ese genérico.
+
+Flujo completo tras el deploy: Admin crea usuario en `/admin/users` → modal muestra credenciales (copiar ahora, no se repiten) → usuaria inicia sesión con esas credenciales → `MustChangePasswordRoute` la redirige a `/cambiar-password-obligatorio` antes de cualquier otra ruta.
+
 ---
 
 ## Arquitectura

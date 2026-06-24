@@ -17,7 +17,7 @@ export const adminCreateUserSchema = z.object({
         return false
       }
     },
-    { message: 'Ingresa un celular chileno válido (ej: +56 9 1234 5678)' },
+    { message: 'Debe ser celular Chile: +56 9 seguido de 8 dígitos (ej: +56 9 1234 5678)' },
   ),
   publication_link: z
     .string()

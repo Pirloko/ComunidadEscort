@@ -7,6 +7,19 @@ import type {
   ReviewAccountInput,
 } from '@/types/admin'
 
+async function getEdgeFunctionErrorMessage(error: unknown, fallback: string): Promise<string> {
+  const context = (error as { context?: unknown })?.context
+  if (context instanceof Response) {
+    try {
+      const body = await context.json()
+      if (typeof body?.error === 'string') return body.error
+    } catch {
+      // body no es JSON parseable
+    }
+  }
+  return error instanceof Error ? error.message : fallback
+}
+
 const OWN_PROFILE_COLUMNS =
   'id, alias, city_id, avatar_url, description, privacy_settings, publication_link, phone, account_status, rejection_reason, role, is_active, must_change_password, last_seen_at, created_at, updated_at, email'
 
@@ -170,7 +183,9 @@ export const profileService = {
     const { data, error } = await supabase.functions.invoke('admin-create-user', {
       body: input,
     })
-    if (error) throw error
+    if (error) {
+      throw new Error(await getEdgeFunctionErrorMessage(error, 'No se pudo crear el usuario'))
+    }
     return data as CreateUserAsAdminResult
   },
 

@@ -20,7 +20,7 @@ export function RegisterForm() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
+  } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema), mode: 'onBlur' })
 
   const onSubmit = async (data: RegisterFormData) => {
     setError(null)
@@ -89,6 +89,9 @@ export function RegisterForm() {
             <Label htmlFor="phone">Celular</Label>
             <Input id="phone" type="tel" placeholder="+56 9 1234 5678" {...register('phone')} />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+            <p className="text-xs text-muted-foreground">
+              Celular chileno: +56 9 seguido de 8 dígitos (ej: +56 9 1234 5678).
+            </p>
           </div>
 
           <div className="space-y-2">

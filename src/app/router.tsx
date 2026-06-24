@@ -9,13 +9,18 @@ import {
 } from '@/components/shared/MustChangePasswordGate'
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { PageLoader } from '@/components/shared/PageLoader'
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 
 function S({ children }: { children: ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
+    </ErrorBoundary>
+  )
 }
 
 const FeedPage = lazy(() =>

@@ -17,7 +17,7 @@ export function normalizePhoneChile(input: string): string {
   normalized = `+56${normalized}`
 
   if (!CHILE_MOBILE_REGEX.test(normalized)) {
-    throw new Error('Ingresa un celular chileno válido (ej: +56 9 1234 5678)')
+    throw new Error('Debe ser celular Chile: +56 9 seguido de 8 dígitos (ej: +56 9 1234 5678)')
   }
 
   return normalized

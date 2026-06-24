@@ -25,7 +25,8 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
 }
 
 export function getNotificationRoute(notification: Notification): string {
-  const { type, data } = notification
+  const { type } = notification
+  const data = notification.data ?? {}
   switch (type) {
     case 'new_comment':
     case 'new_reply':
