@@ -12,7 +12,33 @@ export interface ResourceCity {
   slug: string
 }
 
-export interface Resource {
+export interface ResourcePhoto {
+  id: string
+  resource_id: string
+  url: string
+  sort_order: number
+  created_at: string
+}
+
+export interface HabitacionAttrs {
+  is_public: boolean
+  house_rules: string | null
+  contact_phone: string | null
+  recibe_mujer: boolean
+  recibe_hombre: boolean
+  pide_reserva: boolean
+  pide_referencias: boolean
+  pide_doc_identidad: boolean
+  pide_link_publicacion: boolean
+  acepta_parejas: boolean
+  recibe_agencias: boolean
+  tiene_camaras_seguridad: boolean
+  tiene_wifi: boolean
+  tiene_kit_primeros_auxilios: boolean
+  tiene_extintor: boolean
+}
+
+export interface Resource extends HabitacionAttrs {
   id: string
   author_id: string
   city_id: string
@@ -40,6 +66,7 @@ export interface Resource {
   updated_at: string
   author?: ResourceAuthor
   city?: ResourceCity
+  photos?: ResourcePhoto[]
 }
 
 export interface CreateResourceInput {
@@ -56,6 +83,21 @@ export interface CreateResourceInput {
   instagram_url?: string | null
   facebook_url?: string | null
   whatsapp_phone?: string | null
+  contact_phone?: string | null
+  is_public?: boolean
+  house_rules?: string | null
+  recibe_mujer?: boolean
+  recibe_hombre?: boolean
+  pide_reserva?: boolean
+  pide_referencias?: boolean
+  pide_doc_identidad?: boolean
+  pide_link_publicacion?: boolean
+  acepta_parejas?: boolean
+  recibe_agencias?: boolean
+  tiene_camaras_seguridad?: boolean
+  tiene_wifi?: boolean
+  tiene_kit_primeros_auxilios?: boolean
+  tiene_extintor?: boolean
 }
 
 export interface UpdateResourceInput {
@@ -71,6 +113,21 @@ export interface UpdateResourceInput {
   instagram_url?: string | null
   facebook_url?: string | null
   whatsapp_phone?: string | null
+  contact_phone?: string | null
+  is_public?: boolean
+  house_rules?: string | null
+  recibe_mujer?: boolean
+  recibe_hombre?: boolean
+  pide_reserva?: boolean
+  pide_referencias?: boolean
+  pide_doc_identidad?: boolean
+  pide_link_publicacion?: boolean
+  acepta_parejas?: boolean
+  recibe_agencias?: boolean
+  tiene_camaras_seguridad?: boolean
+  tiene_wifi?: boolean
+  tiene_kit_primeros_auxilios?: boolean
+  tiene_extintor?: boolean
   is_verified?: boolean
   is_active?: boolean
 }
@@ -78,4 +135,13 @@ export interface UpdateResourceInput {
 export interface ReviewResourceInput {
   status: 'aprobada' | 'rechazada'
   rejection_reason?: string
+}
+
+export interface PublicHabitacionFilters {
+  search?: string
+  cityId?: string
+  tiene_wifi?: boolean
+  pide_reserva?: boolean
+  acepta_parejas?: boolean
+  limit?: number
 }

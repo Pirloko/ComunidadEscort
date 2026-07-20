@@ -10,6 +10,7 @@ Guía de contexto para Claude Code al trabajar en este repositorio. **Responde s
 
 - Textos de UI, mensajes de validación y valores de enums de dominio: **español**.
 - Acceso gated: registro → cuenta `pendiente` → revisión admin → acceso a la comunidad.
+- Entrada pública: `/` y `*` redirigen a `/home` (habitaciones para escort, sin sesión). Login/registro desde CTAs en `/home`.
 - Registro exige `publication_link` (URL de publicación externa) y `phone` (celular chileno normalizado) para verificación de identidad. `city_id` es **opcional** en el registro — se asigna después desde el perfil.
 - Login acepta **email o celular** (`+569XXXXXXXX`) indistintamente.
 - Admin puede **crear cuentas manualmente** (ya aprobadas) vía Edge Function, con contraseña temporal de un solo uso y cambio obligatorio en el primer login.
@@ -191,7 +192,7 @@ src/features/<dominio>/
   context/      # providers locales (ej. CityContext)
 ```
 
-**Dominios:** `auth`, `forum`, `alerts`, `resources`, `chat`, `bookmarks`, `notifications`, `profile`, `cities`, `moderation`, `admin`, `reports`.
+**Dominios:** `auth`, `home`, `forum`, `alerts`, `resources`, `chat`, `bookmarks`, `notifications`, `profile`, `cities`, `moderation`, `admin`, `reports`.
 
 **Fuera de features:**
 
@@ -222,7 +223,10 @@ QueryClientProvider (staleTime 5 min)
 
 | Ruta | Acceso | Descripción |
 |------|--------|-------------|
-| `/login`, `/register`, `/forgot-password` | Guest | Auth pública |
+| `/`, `*` | Público | Redirigen a `/home` |
+| `/home` | Público (anon o sesión) | Landing: buscar habitaciones para escort + CTAs login/registro |
+| `/home/habitaciones/:id` | Público | Detalle habitación solo si `is_public` + activa + aprobada |
+| `/login`, `/register`, `/forgot-password` | Guest | Auth pública (logueado → `/feed`) |
 | `/reset-password` | Público | Reset con token Supabase |
 | `/cambiar-password-obligatorio` | Autenticado, `must_change_password=true` | Cambio forzado tras alta por admin |
 | `/cuenta-pendiente` | Autenticado, cuenta no activa | Espera de aprobación |
@@ -231,6 +235,8 @@ QueryClientProvider (staleTime 5 min)
 | `/profile/*`, `/settings` | Cuenta activa | Perfil y ajustes |
 | `/moderation/*` | `moderator` \| `admin` | Panel de moderación |
 | `/admin/*` | `admin` | Panel administrativo |
+
+**Entrada:** la app abre siempre en `/home` (público). Quien ya tiene sesión activa ve el botón "Ir a la comunidad" → `/feed`.
 
 **Guards (en orden):** `ProtectedRoute` → `MustChangePasswordRoute`/`RequirePasswordChangeDone` (`src/components/shared/MustChangePasswordGate.tsx`) → `ActiveAccountRoute` → `AppShell` → `RoleGuard` (moderation/admin).
 
@@ -343,18 +349,27 @@ Usuario crea alerta → status=pendiente → Cola global (no filtrada por ciudad
 ```
 Autor puede editar alerta solo mientras `status=pendiente`.
 
-### Flujo: "Datos de todo" — ex directorio de recursos (migración `00031`–`00035`)
+### Flujo: "Datos de todo" — ex directorio de recursos (migración `00031`–`00036`)
 ```
 Mod/Admin crea dato en /resources/new → status=aprobada directo (sin cola)
-  → RLS resources_insert_staff exige is_moderator_or_admin() AND status='aprobada'
+  → RLS resources_insert_staff: otras categorías = is_moderator_or_admin();
+     habitaciones_escort = SOLO is_admin()
   → Visible de inmediato en /resources (is_active=true)
+
+Habitaciones (category=habitaciones_escort, migración 00036*):
+  → Solo admin crea/edita/borra (UI + RLS). Mods no ven la categoría en el form.
+  → Campos: fotos (resource_photos + bucket resource-photos), attrs Sí/No,
+    house_rules, contact_phone, whatsapp_phone, is_public
+  → is_public=true → visible en /home para anon (RLS resources_select_public_habitaciones)
+  → is_public=false → solo miembros autenticados en /resources (filtro habitaciones)
+  → Detalle enriquecido en /resources/:id y /home/habitaciones/:id
 
 Post-publicación (Admin en /admin/resources):
   → is_verified=true: badge “Verificado”, orden prioritario en listados
   → is_active toggle: ocultar/mostrar sin borrar
 
-Edición: solo Mod/Admin (RoleGuard en /resources/:id/edit + RLS resources_mod_review,
-sin filtro de autoría ni de status — puede editar cualquier dato, no solo el propio).
+Edición: Mod/Admin para categorías normales; SOLO admin para habitaciones
+(RLS resources_mod_review excluye habitaciones_escort; resources_admin_verify cubre admin).
 Usuarias normales: solo lectura, comentan (resource_comments) y dejan reseña con
 estrellas (resource_reviews, una por usuaria por dato — reenviar actualiza la propia).
 /moderation/resources sigue funcionando para filas legacy con status=pendiente
@@ -367,6 +382,8 @@ Categorías (`resource_category`, migración `00031`): `delivery`, `farmacia`,
 `facebook_url`, `whatsapp_phone` (normalizado con `normalizePhoneChile`),
 `rating_avg`/`reviews_count` (denormalizados, recalculados por trigger
 `update_resource_rating` en `00035` ante cualquier cambio en `resource_reviews`).
+Campos habitación (`00036`): `is_public`, `house_rules`, `contact_phone`, attrs
+booleanos; tabla `resource_photos`; Storage bucket `resource-photos` (`00036c`).
 
 ### Flujo: reportes de contenido (Moderación)
 ```
@@ -428,6 +445,7 @@ recursos y **reportes** (`pending-reports-count`, refetch 30s) — no están en 
 
 ### Storage
 - Bucket `avatars`: upload en `profileService.uploadAvatar` (max 2 MB, jpg/png/webp).
+- Bucket `resource-photos` (`00036c`): público lectura; upload/update/delete solo `is_admin()` (max 5 MB, jpg/png/webp). Usado por `resourceService.uploadResourcePhoto`.
 
 ### Realtime habilitado
 - `notifications` (migración `00015`) — `notificationService.subscribeToNotifications`.
@@ -475,8 +493,9 @@ Aplicar en **orden de filename** en Supabase SQL Editor.
 | Post-MVP | Moderación recursos, aprobación cuentas, reportes, menciones | `00018`–`00026` |
 | Post-MVP | Teléfono + ciudad opcional, login por celular, defensa en profundidad RLS, fixes de seguridad | `00027`–`00030` |
 | Post-MVP | "Datos de todo": categorías nuevas, solo staff crea, ubicación/redes, comentarios y reseñas con estrellas | `00031`–`00035` |
+| Post-MVP | Habitaciones públicas `/home`: attrs, fotos, `is_public`, RLS anon, bucket `resource-photos` | `00036`, `00036b`, `00036c` |
 
-**Lista completa:** `00001` … `00035` (falta `00016` — hueco intencional). Sufijos `a`–`h` para RLS/triggers por fase.
+**Lista completa:** `00001` … `00036c` (falta `00016` — hueco intencional). Sufijos `a`–`h` / `b`/`c` para RLS/storage por fase.
 
 **Convención al añadir features:**
 1. `000XX_<feature>.sql` — tablas/columnas
@@ -533,11 +552,12 @@ report_status:       'pendiente' | 'resuelto' | 'descartado'
 - [x] Política de contraseña compartida (mayúscula + número/símbolo) en registro, reset y cambio obligatorio
 - [x] CI en GitHub Actions (lint + build en push/PR a `main`)
 - [x] Deploy en Netlify (`netlify.toml`)
+- [x] `/home` público: habitaciones para escort (fotos, attrs, WhatsApp); solo admin publica; `is_public` (migraciones `00036`–`00036c`)
 
 ### Prioridad alta (trabajo reciente / estabilización)
-1. **Verificar migraciones 00021–00024 aplicadas** en Supabase cloud (cuentas pendientes, `blocked_emails`, admin operativo).
-2. **Sincronizar tipos TS** con schema post-migración (`Profile.account_status`, `Resource.status`, etc.).
-3. **Flujo end-to-end de registro → aprobación → acceso** probado en prod/staging.
+1. **Aplicar migraciones `00036` / `00036b` / `00036c`** en Supabase cloud (SQL Editor, en ese orden) si aún no están.
+2. **Verificar migraciones 00021–00024 aplicadas** en Supabase cloud (cuentas pendientes, `blocked_emails`, admin operativo).
+3. **Flujo end-to-end:** anon `/home` → admin crea habitación `is_public` → aparece en `/home` y en Datos de todo.
 
 ### Prioridad media
 4. Tests unitarios (Vitest + Testing Library) — infraestructura inexistente. E2E con Playwright ya existe (`e2e/`, ver sección "Testing E2E") para flujos críticos contra prod.

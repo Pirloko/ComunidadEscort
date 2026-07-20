@@ -8,7 +8,7 @@ description: Crea y revisa migraciones SQL para Comunidadescort.cl siguiendo num
 ## Antes de escribir SQL
 
 1. Leer migraciones existentes en `supabase/migrations/` para no duplicar columnas/policies.
-2. Determinar el **siguiente número** (actual: hasta `00023`; hueco conocido: `00016`).
+2. Determinar el **siguiente número** (actual: hasta `00036c`; hueco conocido: `00016`).
 3. Identificar si el cambio requiere **1, 2 o 3 archivos** (ver convención abajo).
 4. Planificar actualización de tipos en `src/types/` (manual, no hay codegen).
 

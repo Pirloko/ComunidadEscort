@@ -12,6 +12,7 @@ import {
   Settings2,
   Bookmark,
   Users,
+  BedDouble,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/button'
 
 const NAV_ITEMS = [
   { to: '/feed', label: 'Inicio', icon: Home },
+  { to: '/home', label: 'Habitaciones', icon: BedDouble, match: '/home' },
   { to: '/forum', label: 'Foro', icon: MessageSquare },
   { to: '/alerts', label: 'Alertas', icon: ShieldAlert },
   { to: '/resources', label: 'Datos de todo', icon: MapPin },

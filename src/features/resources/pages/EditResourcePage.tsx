@@ -21,9 +21,12 @@ export function EditResourcePage() {
   })
 
   const isMod = profile?.role === 'moderator' || profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin'
+  const isHabitacion = resource?.category === 'habitaciones_escort'
+  const canEdit = isHabitacion ? isAdmin : isMod
 
   if (isLoading) return <Skeleton className="mx-auto h-96 max-w-2xl rounded-xl" />
-  if (isError || !resource || !isMod) {
+  if (isError || !resource || !canEdit) {
     return <ErrorState title="No puedes editar este dato" />
   }
 

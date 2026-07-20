@@ -160,11 +160,24 @@ const ChangePasswordRequiredPage = lazy(() =>
     default: m.ChangePasswordRequiredPage,
   })),
 )
+const HomePage = lazy(() =>
+  import('@/features/home/pages/HomePage').then((m) => ({ default: m.HomePage })),
+)
+const HabitacionPublicDetailPage = lazy(() =>
+  import('@/features/home/pages/HabitacionPublicDetailPage').then((m) => ({
+    default: m.HabitacionPublicDetailPage,
+  })),
+)
 
 export function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/feed" replace />} />
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/home" element={<S><HomePage /></S>} />
+      <Route
+        path="/home/habitaciones/:habitacionId"
+        element={<S><HabitacionPublicDetailPage /></S>}
+      />
 
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
@@ -265,7 +278,7 @@ export function AppRouter() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/feed" replace />} />
+      <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   )
 }

@@ -17,8 +17,9 @@ export function CreateResourcePage() {
         <CardHeader>
           <CardTitle>Agregar dato</CardTitle>
           <CardDescription>
-            Solo moderadoras y admin publican datos verificados en Datos de todo de{' '}
-            {selectedCity?.name ?? 'tu ciudad'}. Se publica de inmediato, sin cola de revisión.
+            Publica en Datos de todo de {selectedCity?.name ?? 'tu ciudad'}. Se publica de
+            inmediato. Las <strong>habitaciones para escort</strong> solo las crea una
+            administradora (con fotos y visibilidad en /home).
           </CardDescription>
         </CardHeader>
         <CardContent>

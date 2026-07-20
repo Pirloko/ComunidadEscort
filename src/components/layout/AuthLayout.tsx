@@ -12,7 +12,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="mb-8 flex flex-col items-center gap-2 text-center">
-        <Link to="/" className="flex items-center gap-2 text-primary">
+        <Link to="/home" className="flex items-center gap-2 text-primary">
           <Shield className="h-8 w-8 text-accent" />
           <span className="text-xl font-bold">{APP_NAME}</span>
         </Link>

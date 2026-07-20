@@ -1,5 +1,6 @@
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import {
   ArrowLeft,
   MapPin,
@@ -19,11 +20,13 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ResourceCategoryBadge } from '@/features/resources/components/ResourceCategoryBadge'
 import { ResourceCommentThread } from '@/features/resources/components/ResourceCommentThread'
 import { ResourceReviewSection } from '@/features/resources/components/ResourceReviewSection'
+import { HabitacionAttrsList } from '@/features/home/components/HabitacionAttrsList'
 import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
 import { StarRating } from '@/components/shared/StarRating'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime } from '@/lib/format'
+import { primaryContactPhone, whatsappUrl } from '@/lib/habitaciones'
 import { resourceService } from '@/services/resource.service'
 import { resourceCommentService } from '@/services/resource-comment.service'
 import { resourceReviewService } from '@/services/resource-review.service'
@@ -32,6 +35,7 @@ export function ResourceDetailPage() {
   const { resourceId } = useParams<{ resourceId: string }>()
   const navigate = useNavigate()
   const { user, profile } = useAuth()
+  const [photoIdx, setPhotoIdx] = useState(0)
 
   const { data: resource, isLoading, isError, refetch } = useQuery({
     queryKey: ['resource', resourceId],
@@ -53,6 +57,10 @@ export function ResourceDetailPage() {
 
   const isAuthor = user?.id === resource?.author_id
   const isMod = profile?.role === 'moderator' || profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin'
+  const isHabitacion = resource?.category === 'habitaciones_escort'
+  const canEdit = isHabitacion ? isAdmin : isMod
+  const canDelete = isHabitacion ? isAdmin : isAuthor || isMod
   const canView =
     (resource?.status === 'aprobada' && resource?.is_active) || isAuthor || isMod
 
@@ -61,6 +69,10 @@ export function ResourceDetailPage() {
     (resource?.latitude && resource?.longitude
       ? `https://www.google.com/maps?q=${resource.latitude},${resource.longitude}`
       : null)
+
+  const contact = resource
+    ? primaryContactPhone(resource.whatsapp_phone, resource.contact_phone, resource.phone)
+    : null
 
   const handleDelete = async () => {
     if (!resource || !confirm('¿Eliminar este dato?')) return
@@ -81,6 +93,9 @@ export function ResourceDetailPage() {
     return <ErrorState title="Dato no encontrado" onRetry={() => refetch()} />
   }
 
+  const photos = resource.photos ?? []
+  const currentPhoto = photos[photoIdx]?.url
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Link
@@ -91,13 +106,42 @@ export function ResourceDetailPage() {
         Volver a Datos de todo
       </Link>
 
-      <Card>
+      <Card className="overflow-hidden">
+        {isHabitacion && photos.length > 0 && (
+          <>
+            <div className="aspect-video bg-muted">
+              <img src={currentPhoto} alt={resource.name} className="h-full w-full object-cover" />
+            </div>
+            {photos.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto p-3">
+                {photos.map((p, i) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPhotoIdx(i)}
+                    className={`h-14 w-20 shrink-0 overflow-hidden rounded-md border-2 ${
+                      i === photoIdx ? 'border-accent' : 'border-transparent'
+                    }`}
+                  >
+                    <img src={p.url} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <ResourceCategoryBadge category={resource.category} />
                 {(isAuthor || isMod) && <AlertStatusBadge status={resource.status} />}
+                {isHabitacion && resource.is_public && (
+                  <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-medium text-accent">
+                    Visible en /home
+                  </span>
+                )}
                 {resource.status === 'aprobada' && resource.is_verified && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
                     <BadgeCheck className="h-3.5 w-3.5" />
@@ -150,78 +194,117 @@ export function ResourceDetailPage() {
           )}
 
           {resource.status === 'aprobada' && (
-            <div className="space-y-2 rounded-lg bg-muted/50 p-4">
-              {resource.phone && (
-                <a
-                  href={`tel:${resource.phone}`}
-                  className="flex items-center gap-2 text-sm hover:text-accent"
-                >
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  {resource.phone}
-                </a>
+            <>
+              {isHabitacion && contact && (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button asChild className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700">
+                    <a
+                      href={whatsappUrl(
+                        contact,
+                        `Hola, vi "${resource.name}" en Comunidadescort y quiero consultar arriendo.`,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      WhatsApp
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline" className="flex-1 gap-2">
+                    <a href={`tel:${contact}`}>
+                      <Phone className="h-4 w-4" />
+                      Llamar
+                    </a>
+                  </Button>
+                </div>
               )}
-              {resource.whatsapp_phone && (
-                <a
-                  href={`https://wa.me/${resource.whatsapp_phone.replace('+', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm hover:text-accent"
-                >
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                  WhatsApp: {resource.whatsapp_phone}
-                </a>
+
+              {isHabitacion && <HabitacionAttrsList habitacion={resource} />}
+
+              {isHabitacion && resource.house_rules && (
+                <div className="space-y-2">
+                  <h2 className="font-semibold text-amber-500">
+                    Observaciones o Reglas del Hospedaje
+                  </h2>
+                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                    {resource.house_rules}
+                  </p>
+                </div>
               )}
-              {resource.address && (
-                <p className="flex items-start gap-2 text-sm">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  {resource.address}
-                </p>
-              )}
-              {mapsUrl && (
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-accent hover:underline"
-                >
-                  <Map className="h-4 w-4" />
-                  Ver en Google Maps
-                </a>
-              )}
-              {resource.website && (
-                <a
-                  href={resource.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-accent hover:underline"
-                >
-                  <Globe className="h-4 w-4" />
-                  {resource.website}
-                </a>
-              )}
-              {resource.instagram_url && (
-                <a
-                  href={resource.instagram_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-accent hover:underline"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Instagram
-                </a>
-              )}
-              {resource.facebook_url && (
-                <a
-                  href={resource.facebook_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-accent hover:underline"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Facebook
-                </a>
-              )}
-            </div>
+
+              <div className="space-y-2 rounded-lg bg-muted/50 p-4">
+                {!isHabitacion && resource.phone && (
+                  <a
+                    href={`tel:${resource.phone}`}
+                    className="flex items-center gap-2 text-sm hover:text-accent"
+                  >
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    {resource.phone}
+                  </a>
+                )}
+                {!isHabitacion && resource.whatsapp_phone && (
+                  <a
+                    href={`https://wa.me/${resource.whatsapp_phone.replace('+', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm hover:text-accent"
+                  >
+                    <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                    WhatsApp: {resource.whatsapp_phone}
+                  </a>
+                )}
+                {resource.address && (
+                  <p className="flex items-start gap-2 text-sm">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    {resource.address}
+                  </p>
+                )}
+                {mapsUrl && (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-accent hover:underline"
+                  >
+                    <Map className="h-4 w-4" />
+                    Ver en Google Maps
+                  </a>
+                )}
+                {resource.website && (
+                  <a
+                    href={resource.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-accent hover:underline"
+                  >
+                    <Globe className="h-4 w-4" />
+                    {resource.website}
+                  </a>
+                )}
+                {resource.instagram_url && (
+                  <a
+                    href={resource.instagram_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-accent hover:underline"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Instagram
+                  </a>
+                )}
+                {resource.facebook_url && (
+                  <a
+                    href={resource.facebook_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-accent hover:underline"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Facebook
+                  </a>
+                )}
+              </div>
+            </>
           )}
 
           {resource.author && resource.status === 'aprobada' && (
@@ -230,9 +313,9 @@ export function ResourceDetailPage() {
             </p>
           )}
 
-          {(isAuthor || isMod) && (
+          {(canEdit || canDelete) && (
             <div className="flex gap-2 border-t pt-4">
-              {isMod && (
+              {canEdit && (
                 <Link to={`/resources/${resource.id}/edit`}>
                   <Button variant="outline" size="sm">
                     <Pencil className="mr-1 h-4 w-4" />
@@ -240,10 +323,12 @@ export function ResourceDetailPage() {
                   </Button>
                 </Link>
               )}
-              <Button variant="outline" size="sm" onClick={handleDelete}>
-                <Trash2 className="mr-1 h-4 w-4 text-destructive" />
-                Eliminar
-              </Button>
+              {canDelete && (
+                <Button variant="outline" size="sm" onClick={handleDelete}>
+                  <Trash2 className="mr-1 h-4 w-4 text-destructive" />
+                  Eliminar
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
