@@ -24,6 +24,7 @@ GRANT EXECUTE ON FUNCTION is_conversation_participant(UUID) TO authenticated;
 
 -- Reemplazar políticas que causaban recursión
 DROP POLICY IF EXISTS "conv_participants_select_own" ON conversation_participants;
+DROP POLICY IF EXISTS "conv_participants_select" ON conversation_participants;
 DROP POLICY IF EXISTS "conversations_select_participant" ON conversations;
 DROP POLICY IF EXISTS "messages_select_participant" ON messages;
 DROP POLICY IF EXISTS "messages_insert_participant" ON messages;

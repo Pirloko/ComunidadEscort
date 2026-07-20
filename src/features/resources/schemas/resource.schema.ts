@@ -32,6 +32,7 @@ const latLngOptional = z
 
 export const resourceSchema = z
   .object({
+    city_id: z.string().uuid('Selecciona una ciudad'),
     category: z.enum([
       'delivery',
       'farmacia',

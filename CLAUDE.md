@@ -444,8 +444,8 @@ recursos y **reportes** (`pending-reports-count`, refetch 30s) — no están en 
 | `login-with-phone` (`supabase/functions/login-with-phone/`, `verify_jwt=false`) | Login por celular: resuelve email con `service_role` y autentica vía GoTrue `/auth/v1/token`, sin exponer el email al cliente; error genérico ante teléfono inexistente o password incorrecta |
 
 ### Storage
-- Bucket `avatars`: upload en `profileService.uploadAvatar` (max 2 MB, jpg/png/webp).
-- Bucket `resource-photos` (`00036c`): público lectura; upload/update/delete solo `is_admin()` (max 5 MB, jpg/png/webp). Usado por `resourceService.uploadResourcePhoto`.
+- Bucket `avatars`: upload en `profileService.uploadAvatar` (max 2 MB entrada; se convierte a **WebP**).
+- Bucket `resource-photos` (`00036c`, endurecido en `00037`): **privado**; solo `image/webp`; paths `public/{id}/…` o `private/{id}/…`. Lectura anon solo prefijo `public/`; miembros/admin también `private/`. El cliente guarda el path y firma URLs (`createSignedUrl`, 1 h). Upload/update/delete solo `is_admin()`. Conversión WebP en `src/lib/image-webp.ts`.
 
 ### Realtime habilitado
 - `notifications` (migración `00015`) — `notificationService.subscribeToNotifications`.
@@ -494,8 +494,9 @@ Aplicar en **orden de filename** en Supabase SQL Editor.
 | Post-MVP | Teléfono + ciudad opcional, login por celular, defensa en profundidad RLS, fixes de seguridad | `00027`–`00030` |
 | Post-MVP | "Datos de todo": categorías nuevas, solo staff crea, ubicación/redes, comentarios y reseñas con estrellas | `00031`–`00035` |
 | Post-MVP | Habitaciones públicas `/home`: attrs, fotos, `is_public`, RLS anon, bucket `resource-photos` | `00036`, `00036b`, `00036c` |
+| Post-MVP | Endurecimiento RLS chat + lecturas comunidad + storage WebP/privado | `00037` |
 
-**Lista completa:** `00001` … `00036c` (falta `00016` — hueco intencional). Sufijos `a`–`h` / `b`/`c` para RLS/storage por fase.
+**Lista completa:** `00001` … `00037` (falta `00016` — hueco intencional). Sufijos `a`–`h` / `b`/`c` para RLS/storage por fase.
 
 **Convención al añadir features:**
 1. `000XX_<feature>.sql` — tablas/columnas

@@ -7,7 +7,7 @@ import { useCity } from '@/features/cities/context/CityContext'
 export function CreateResourcePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { selectedCityId, selectedCity } = useCity()
+  const { selectedCityId } = useCity()
 
   if (!user || !selectedCityId) return null
 
@@ -17,9 +17,9 @@ export function CreateResourcePage() {
         <CardHeader>
           <CardTitle>Agregar dato</CardTitle>
           <CardDescription>
-            Publica en Datos de todo de {selectedCity?.name ?? 'tu ciudad'}. Se publica de
-            inmediato. Las <strong>habitaciones para escort</strong> solo las crea una
-            administradora (con fotos y visibilidad en /home).
+            Elige la ciudad del dato al publicarlo. Las{' '}
+            <strong>habitaciones para escort</strong> solo las crea una administradora (con
+            fotos y visibilidad en /home).
           </CardDescription>
         </CardHeader>
         <CardContent>

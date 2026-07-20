@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { convertImageToWebp } from '@/lib/image-webp'
 import type { PrivacySettings, Profile, PublicProfile, UserRole } from '@/types/database'
 import type {
   AdminProfile,
@@ -239,12 +240,16 @@ export const profileService = {
       throw new Error('La imagen no puede superar 2 MB.')
     }
 
-    const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
-    const path = `${userId}/avatar.${ext}`
+    const webp = await convertImageToWebp(file, {
+      maxEdge: 512,
+      quality: 0.8,
+      maxOutputBytes: MAX_AVATAR_SIZE,
+    })
+    const path = `${userId}/avatar.webp`
 
     const { error: uploadError } = await supabase.storage
       .from(AVATAR_BUCKET)
-      .upload(path, file, { upsert: true, contentType: file.type })
+      .upload(path, webp, { upsert: true, contentType: 'image/webp' })
 
     if (uploadError) throw uploadError
 

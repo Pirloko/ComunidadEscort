@@ -101,6 +101,7 @@ export interface CreateResourceInput {
 }
 
 export interface UpdateResourceInput {
+  city_id?: string
   category?: ResourceCategory
   name?: string
   description?: string | null

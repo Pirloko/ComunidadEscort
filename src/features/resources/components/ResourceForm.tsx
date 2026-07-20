@@ -14,6 +14,7 @@ import { HABITACION_ATTR_LABELS } from '@/lib/habitaciones'
 import { normalizePhoneChile } from '@/lib/phone'
 import { resourceService } from '@/services/resource.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useCity } from '@/features/cities/context/CityContext'
 import type { Resource, ResourcePhoto } from '@/types/resources'
 
 interface ResourceFormProps {
@@ -26,6 +27,7 @@ interface ResourceFormProps {
 export function ResourceForm({ cityId, authorId, initialData, onSuccess }: ResourceFormProps) {
   const navigate = useNavigate()
   const { profile } = useAuth()
+  const { cities } = useCity()
   const [error, setError] = useState<string | null>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [existingPhotos, setExistingPhotos] = useState<ResourcePhoto[]>(
@@ -50,6 +52,7 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
     resolver: zodResolver(resourceSchema),
     mode: 'onBlur',
     defaultValues: {
+      city_id: initialData?.city_id ?? cityId,
       category: initialData?.category ?? 'otros',
       name: initialData?.name ?? '',
       description: initialData?.description ?? '',
@@ -91,6 +94,7 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
       }
 
       const payload = {
+        city_id: data.city_id,
         category: data.category,
         name: data.name,
         description: data.description || null,
@@ -122,12 +126,14 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
 
       let resource = isEditing
         ? await resourceService.updateResource(initialData.id, payload)
-        : await resourceService.createResource(authorId, { ...payload, city_id: cityId })
+        : await resourceService.createResource(authorId, payload)
 
       if (isHabitacion && pendingFiles.length > 0) {
         const startOrder = existingPhotos.length
         for (let i = 0; i < pendingFiles.length; i++) {
-          await resourceService.uploadResourcePhoto(resource.id, pendingFiles[i], startOrder + i)
+          await resourceService.uploadResourcePhoto(resource.id, pendingFiles[i], startOrder + i, {
+            isPublic: !!data.is_public,
+          })
         }
         const refreshed = await resourceService.getResourceById(resource.id)
         if (refreshed) resource = refreshed
@@ -154,6 +160,23 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
       {error && (
         <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
       )}
+
+      <div className="space-y-2">
+        <Label htmlFor="city_id">Ciudad</Label>
+        <select
+          id="city_id"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          {...register('city_id')}
+        >
+          <option value="">Selecciona una ciudad</option>
+          {cities.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        {errors.city_id && <p className="text-sm text-destructive">{errors.city_id.message}</p>}
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="category">Categoría</Label>
@@ -402,7 +425,9 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
                 {pendingFiles.length} foto(s) pendiente(s) de subir al guardar.
               </p>
             )}
-            <p className="text-xs text-muted-foreground">JPG, PNG o WebP. Máx. 5 MB c/u.</p>
+            <p className="text-xs text-muted-foreground">
+              JPG, PNG o WebP — se convierten a WebP optimizado (máx. ~2,5 MB c/u).
+            </p>
           </div>
         </>
       )}

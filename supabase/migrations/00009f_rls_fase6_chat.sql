@@ -24,32 +24,39 @@ GRANT EXECUTE ON FUNCTION is_conversation_participant(UUID) TO authenticated;
 
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "conversations_select_participant" ON conversations;
 CREATE POLICY "conversations_select_participant"
   ON conversations FOR SELECT TO authenticated
   USING (is_conversation_participant(id));
 
+DROP POLICY IF EXISTS "conversations_insert" ON conversations;
 CREATE POLICY "conversations_insert"
   ON conversations FOR INSERT TO authenticated WITH CHECK (true);
 
 ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "conv_participants_select" ON conversation_participants;
 CREATE POLICY "conv_participants_select"
   ON conversation_participants FOR SELECT TO authenticated
   USING (is_conversation_participant(conversation_id));
 
+DROP POLICY IF EXISTS "conv_participants_insert" ON conversation_participants;
 CREATE POLICY "conv_participants_insert"
   ON conversation_participants FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "conv_participants_update_own" ON conversation_participants;
 CREATE POLICY "conv_participants_update_own"
   ON conversation_participants FOR UPDATE TO authenticated
   USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "messages_select_participant" ON messages;
 CREATE POLICY "messages_select_participant"
   ON messages FOR SELECT TO authenticated
   USING (is_conversation_participant(conversation_id));
 
+DROP POLICY IF EXISTS "messages_insert_participant" ON messages;
 CREATE POLICY "messages_insert_participant"
   ON messages FOR INSERT TO authenticated
   WITH CHECK (

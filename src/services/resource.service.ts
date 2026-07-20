@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { convertImageToWebp } from '@/lib/image-webp'
 import type { ResourceCategory } from '@/types/database'
 import type {
   CreateResourceInput,
@@ -39,14 +40,63 @@ const PUBLIC_HABITACION_SELECT = `
 `
 
 const PHOTOS_BUCKET = 'resource-photos'
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024
-const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_PHOTO_SIZE = 8 * 1024 * 1024 // antes de convertir a WebP
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+const SIGNED_URL_TTL_SEC = 60 * 60 // 1 hora
 
 function sortPhotos(resource: Resource): Resource {
   if (resource.photos) {
     resource.photos = [...resource.photos].sort((a, b) => a.sort_order - b.sort_order)
   }
   return resource
+}
+
+/** Extrae path de storage desde URL legacy o path relativo. */
+function storagePathFromUrl(url: string): string | null {
+  if (!url) return null
+  if (!url.startsWith('http')) return url.replace(/^\//, '')
+
+  const markers = [
+    `/object/public/${PHOTOS_BUCKET}/`,
+    `/object/sign/${PHOTOS_BUCKET}/`,
+    `/object/authenticated/${PHOTOS_BUCKET}/`,
+  ]
+  for (const marker of markers) {
+    const idx = url.indexOf(marker)
+    if (idx !== -1) {
+      return decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
+    }
+  }
+  return null
+}
+
+async function resolvePhotoUrls(photos: ResourcePhoto[] | undefined): Promise<ResourcePhoto[] | undefined> {
+  if (!photos?.length) return photos
+
+  const resolved = await Promise.all(
+    photos.map(async (photo) => {
+      const path = storagePathFromUrl(photo.url)
+      if (!path) return photo
+
+      const { data, error } = await supabase.storage
+        .from(PHOTOS_BUCKET)
+        .createSignedUrl(path, SIGNED_URL_TTL_SEC)
+
+      if (error || !data?.signedUrl) return photo
+      return { ...photo, url: data.signedUrl }
+    }),
+  )
+  return resolved
+}
+
+async function withSignedPhotos(resource: Resource): Promise<Resource> {
+  const sorted = sortPhotos(resource)
+  sorted.photos = await resolvePhotoUrls(sorted.photos)
+  return sorted
+}
+
+async function withSignedPhotosList(resources: Resource[]): Promise<Resource[]> {
+  return Promise.all(resources.map(withSignedPhotos))
 }
 
 export const resourceService = {
@@ -75,7 +125,7 @@ export const resourceService = {
 
     const { data, error } = await query
     if (error) throw error
-    return ((data ?? []) as unknown as Resource[]).map(sortPhotos)
+    return withSignedPhotosList((data ?? []) as unknown as Resource[])
   },
 
   async getPublicHabitaciones(filters: PublicHabitacionFilters = {}): Promise<Resource[]> {
@@ -101,7 +151,7 @@ export const resourceService = {
 
     const { data, error } = await query
     if (error) throw error
-    return ((data ?? []) as unknown as Resource[]).map(sortPhotos)
+    return withSignedPhotosList((data ?? []) as unknown as Resource[])
   },
 
   async getPublicHabitacionById(resourceId: string): Promise<Resource | null> {
@@ -116,7 +166,7 @@ export const resourceService = {
       .maybeSingle()
 
     if (error) throw error
-    return data ? sortPhotos(data as unknown as Resource) : null
+    return data ? withSignedPhotos(data as unknown as Resource) : null
   },
 
   async getResourceById(resourceId: string): Promise<Resource | null> {
@@ -127,7 +177,7 @@ export const resourceService = {
       .maybeSingle()
 
     if (error) throw error
-    return data ? sortPhotos(data as unknown as Resource) : null
+    return data ? withSignedPhotos(data as unknown as Resource) : null
   },
 
   async getMyResources(authorId: string): Promise<Resource[]> {
@@ -138,7 +188,7 @@ export const resourceService = {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return ((data ?? []) as unknown as Resource[]).map(sortPhotos)
+    return withSignedPhotosList((data ?? []) as unknown as Resource[])
   },
 
   async getPendingResources(): Promise<Resource[]> {
@@ -149,7 +199,7 @@ export const resourceService = {
       .order('created_at', { ascending: true })
 
     if (error) throw error
-    return ((data ?? []) as unknown as Resource[]).map(sortPhotos)
+    return withSignedPhotosList((data ?? []) as unknown as Resource[])
   },
 
   async getResourcesByAuthor(authorId: string): Promise<Resource[]> {
@@ -176,7 +226,7 @@ export const resourceService = {
       .single()
 
     if (error) throw error
-    return sortPhotos(data as unknown as Resource)
+    return withSignedPhotos(data as unknown as Resource)
   },
 
   async updateResource(resourceId: string, input: UpdateResourceInput): Promise<Resource> {
@@ -188,7 +238,7 @@ export const resourceService = {
       .single()
 
     if (error) throw error
-    return sortPhotos(data as unknown as Resource)
+    return withSignedPhotos(data as unknown as Resource)
   },
 
   async reviewResource(
@@ -209,7 +259,7 @@ export const resourceService = {
       .single()
 
     if (error) throw error
-    return sortPhotos(data as unknown as Resource)
+    return withSignedPhotos(data as unknown as Resource)
   },
 
   async deleteResource(resourceId: string): Promise<void> {
@@ -228,7 +278,7 @@ export const resourceService = {
       .limit(limit)
 
     if (error) throw error
-    return ((data ?? []) as unknown as Resource[]).map(sortPhotos)
+    return withSignedPhotosList((data ?? []) as unknown as Resource[])
   },
 
   async getAllResourcesForAdmin(params?: {
@@ -251,44 +301,48 @@ export const resourceService = {
 
     const { data, error } = await query
     if (error) throw error
-    return ((data ?? []) as unknown as Resource[]).map(sortPhotos)
+    return withSignedPhotosList((data ?? []) as unknown as Resource[])
   },
 
-  async uploadResourcePhoto(resourceId: string, file: File, sortOrder = 0): Promise<ResourcePhoto> {
+  async uploadResourcePhoto(
+    resourceId: string,
+    file: File,
+    sortOrder = 0,
+    options?: { isPublic?: boolean },
+  ): Promise<ResourcePhoto> {
     if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
       throw new Error('Formato no permitido. Usa JPG, PNG o WebP.')
     }
     if (file.size > MAX_PHOTO_SIZE) {
-      throw new Error('La imagen no puede superar 5 MB.')
+      throw new Error('La imagen no puede superar 8 MB antes de optimizar.')
     }
 
-    const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
-    const path = `${resourceId}/${crypto.randomUUID()}.${ext}`
+    const webp = await convertImageToWebp(file)
+    const visibility = options?.isPublic ? 'public' : 'private'
+    const path = `${visibility}/${resourceId}/${crypto.randomUUID()}.webp`
 
     const { error: uploadError } = await supabase.storage
       .from(PHOTOS_BUCKET)
-      .upload(path, file, { upsert: false, contentType: file.type })
+      .upload(path, webp, { upsert: false, contentType: 'image/webp' })
 
     if (uploadError) throw uploadError
 
-    const { data: urlData } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path)
-    const url = urlData.publicUrl
-
+    // Guardamos el path relativo; al leer se firma con createSignedUrl
     const { data, error } = await supabase
       .from('resource_photos')
-      .insert({ resource_id: resourceId, url, sort_order: sortOrder })
+      .insert({ resource_id: resourceId, url: path, sort_order: sortOrder })
       .select('id, resource_id, url, sort_order, created_at')
       .single()
 
     if (error) throw error
-    return data as ResourcePhoto
+
+    const signed = await resolvePhotoUrls([data as ResourcePhoto])
+    return signed![0]
   },
 
   async deleteResourcePhoto(photoId: string, url: string): Promise<void> {
-    const marker = `/object/public/${PHOTOS_BUCKET}/`
-    const idx = url.indexOf(marker)
-    if (idx !== -1) {
-      const path = url.slice(idx + marker.length).split('?')[0]
+    const path = storagePathFromUrl(url)
+    if (path) {
       await supabase.storage.from(PHOTOS_BUCKET).remove([path])
     }
 
