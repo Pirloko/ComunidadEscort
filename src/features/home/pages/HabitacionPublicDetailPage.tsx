@@ -85,8 +85,8 @@ export function HabitacionPublicDetailPage() {
       <div className="home-landing-mesh pointer-events-none absolute inset-x-0 top-0 h-[420px]" aria-hidden />
 
       <header className="sticky top-0 z-40 border-b border-white/8 bg-background/75 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-lg items-center justify-between gap-2 px-4">
-          <BrandLogo size="md" to="/home" tone="dark" className="h-12 max-w-[min(100%,220px)]" />
+        <div className="mx-auto flex h-14 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-16 sm:px-4">
+          <BrandLogo size="md" to="/home" tone="dark" className="h-10 max-w-[min(100%,180px)] sm:h-12 sm:max-w-[min(100%,220px)]" />
           <Button
             asChild
             size="sm"
@@ -118,7 +118,7 @@ export function HabitacionPublicDetailPage() {
           <CardContent className="space-y-6 p-5 pt-6 sm:p-6">
             <div className="home-fade-up home-fade-up-delay-2 space-y-3">
               <p className="habitacion-section-label">Habitación para escort</p>
-              <h1 className="home-display text-[1.65rem] font-semibold leading-tight text-foreground sm:text-[1.85rem]">
+              <h1 className="home-display text-display text-[clamp(1.35rem,1.15rem+1.2vw,1.85rem)] font-semibold leading-tight text-foreground">
                 {habitacion.name}
               </h1>
               {habitacion.city && (

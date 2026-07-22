@@ -60,7 +60,7 @@ export function MobileNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex border-t bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex border-t bg-card/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-sm lg:hidden">
       {items.map(({ to, icon: Icon, label, dynamic, badge }) => {
         const href = dynamic && profile ? `/profile/${profile.alias}` : to
         const active =
@@ -72,12 +72,12 @@ export function MobileNav() {
             key={to}
             to={href}
             className={cn(
-              'relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]',
+              'relative flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-2 text-[11px] leading-tight',
               active ? 'text-accent' : 'text-muted-foreground',
             )}
           >
-            <Icon className="h-5 w-5" />
-            {label}
+            <Icon className="h-5 w-5 shrink-0" />
+            <span className="max-w-full truncate">{label}</span>
             {badge != null && badge > 0 && (
               <span className="absolute right-[calc(50%-18px)] top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-white">
                 {badge > 9 ? '9+' : badge}

@@ -77,7 +77,7 @@ export function ProfilePage() {
         <CardContent className="pt-8">
           <div className="flex flex-col items-center text-center">
             <Avatar src={profile.avatar_url} alias={profile.alias} size="xl" />
-            <h1 className="mt-4 text-2xl font-bold">@{profile.alias}</h1>
+            <h1 className="page-title mt-4">@{profile.alias}</h1>
 
             <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />

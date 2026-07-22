@@ -20,7 +20,7 @@ export function MyResourcesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Datos que he publicado</h1>
+        <h1 className="page-title">Datos que he publicado</h1>
         <p className="text-muted-foreground">
           Entradas de Datos de todo que has publicado como moderadora o admin.
         </p>

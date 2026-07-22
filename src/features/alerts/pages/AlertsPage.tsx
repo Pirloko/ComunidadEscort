@@ -46,7 +46,7 @@ export function AlertsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Reportes de clientes</h1>
+        <h1 className="page-title">Reportes de clientes</h1>
         <p className="mt-1 max-w-xl text-sm text-muted-foreground">
           Consulta funas y recomendaciones verificadas. Busca por celular para ver cuántos
           reportes tiene un cliente antes de atenderlo.

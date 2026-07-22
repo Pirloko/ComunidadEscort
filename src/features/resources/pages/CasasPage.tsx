@@ -44,7 +44,7 @@ export function CasasPage() {
   return (
     <div className="mx-auto max-w-lg space-y-5">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+        <h1 className="page-title flex items-center gap-2">
           <Home className="h-6 w-6 text-primary" />
           Casas y habitaciones
         </h1>

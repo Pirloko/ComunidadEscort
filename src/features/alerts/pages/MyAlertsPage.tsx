@@ -20,7 +20,7 @@ export function MyAlertsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Mis alertas</h1>
+        <h1 className="page-title">Mis alertas</h1>
         <p className="text-muted-foreground">Historial de alertas que has reportado.</p>
       </div>
 

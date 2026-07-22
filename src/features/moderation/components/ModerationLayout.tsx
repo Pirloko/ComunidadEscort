@@ -37,7 +37,7 @@ export function ModerationLayout() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Panel de moderación</h1>
+        <h1 className="page-title">Panel de moderación</h1>
         <p className="text-muted-foreground">
           Gestiona alertas, Datos de todo, publicaciones y comentarios de la comunidad.
         </p>

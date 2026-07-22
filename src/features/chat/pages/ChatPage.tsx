@@ -64,7 +64,7 @@ export function ChatPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold">
+        <h1 className="page-title flex items-center gap-2">
           <MessageCircle className="h-6 w-6 text-primary" />
           Chat de la comunidad
         </h1>

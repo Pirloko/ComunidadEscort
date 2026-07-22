@@ -6,11 +6,11 @@ import { InstallPwaBanner } from '@/components/shared/InstallPwaBanner'
 
 export function AppShell() {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-dvh overflow-x-clip bg-background">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
         <Navbar />
-        <main className="flex-1 overflow-y-auto p-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:p-4 lg:p-6 lg:pb-6">
+        <main className="content-shell flex-1 overflow-y-auto overflow-x-clip p-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:p-4 lg:p-6 lg:pb-6">
           <InstallPwaBanner />
           <Outlet />
         </main>

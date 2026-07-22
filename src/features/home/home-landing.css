@@ -14,6 +14,10 @@
   font-family: var(--home-display);
   font-optical-sizing: auto;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-wrap: balance;
+  line-height: 1.25;
 }
 
 .home-landing-bg {

@@ -38,7 +38,7 @@ export function ResourcesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Datos de todo</h1>
+          <h1 className="page-title">Datos de todo</h1>
           <p className="text-muted-foreground">
             Servicios de confianza verificados por la comunidad
             {selectedCity ? ` en ${selectedCity.name}` : ''}.

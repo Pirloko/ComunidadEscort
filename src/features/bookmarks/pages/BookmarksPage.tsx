@@ -32,7 +32,7 @@ export function BookmarksPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Guardados</h1>
+        <h1 className="page-title">Guardados</h1>
         <p className="text-muted-foreground">
           Publicaciones, alertas y datos que guardaste para revisar después.
         </p>

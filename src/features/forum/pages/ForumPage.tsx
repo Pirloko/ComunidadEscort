@@ -46,7 +46,7 @@ export function ForumPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Foro comunitario</h1>
+          <h1 className="page-title">Foro comunitario</h1>
           <p className="text-muted-foreground">
             Comparte experiencias, consejos y aprende junto a otras profesionales.
           </p>

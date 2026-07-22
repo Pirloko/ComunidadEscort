@@ -138,7 +138,7 @@ export function ResourceDetailPage() {
                   </span>
                 )}
               </div>
-              <h1 className="mt-3 text-2xl font-bold">{resource.name}</h1>
+              <h1 className="page-title mt-3">{resource.name}</h1>
               {resource.reviews_count > 0 && (
                 <div className="mt-1 flex items-center gap-1.5">
                   <StarRating value={resource.rating_avg ?? 0} size="sm" />

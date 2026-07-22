@@ -53,7 +53,7 @@ export function FeedPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Hola, {profile?.alias}</h1>
+        <h1 className="page-title">Hola, {profile?.alias}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Bienvenida a tu comunidad segura.
         </p>

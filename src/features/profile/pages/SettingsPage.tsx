@@ -18,7 +18,7 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Configuración</h1>
+        <h1 className="page-title">Configuración</h1>
         <p className="text-muted-foreground">Administra tu privacidad y preferencias.</p>
       </div>
 

@@ -85,8 +85,8 @@ export function HomePage() {
       <div className="home-landing-mesh absolute inset-x-0 top-0 h-[420px]" aria-hidden />
 
       <header className="sticky top-0 z-40 border-b border-white/5 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-lg items-center justify-between gap-2 px-3">
-          <BrandLogo size="md" to="/home" tone="dark" className="h-12 max-w-[min(100%,220px)]" />
+        <div className="mx-auto flex h-14 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-16">
+          <BrandLogo size="md" to="/home" tone="dark" className="h-10 max-w-[min(100%,180px)] sm:h-12 sm:max-w-[min(100%,220px)]" />
           <div className="flex shrink-0 items-center gap-1.5">
             {loggedIn && canEnter ? (
               <Button
@@ -121,7 +121,7 @@ export function HomePage() {
         </div>
       </header>
 
-      <main className="relative mx-auto max-w-lg space-y-10 px-3 pb-12 pt-6">
+      <main className="relative mx-auto max-w-lg space-y-8 px-3 pb-[max(3rem,env(safe-area-inset-bottom))] pt-5 sm:space-y-10 sm:pt-6">
         {/* Ciudades */}
         <section id="habitaciones" className="scroll-mt-16 space-y-3">
           <div>

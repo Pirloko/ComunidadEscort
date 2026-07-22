@@ -70,7 +70,9 @@ export function AdminStatsCards({ stats, isLoading }: AdminStatsCardsProps) {
                 <Icon className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{isLoading ? '…' : stats[key]}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {isLoading ? '…' : stats[key]}
+                </p>
                 <p className="text-sm text-muted-foreground">{label}</p>
                 {sub && !isLoading && (
                   <p className="text-xs text-muted-foreground">

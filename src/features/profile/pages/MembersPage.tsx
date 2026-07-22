@@ -30,7 +30,7 @@ export function MembersPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Miembros</h1>
+          <h1 className="page-title">Miembros</h1>
           <p className="text-muted-foreground">
             Conoce y escribe a otras personas de la comunidad
             {selectedCity ? ` en ${selectedCity.name}` : ''}.
