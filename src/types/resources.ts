@@ -153,4 +153,5 @@ export interface PublicHabitacionFilters {
   pide_reserva?: boolean
   acepta_parejas?: boolean
   limit?: number
+  offset?: number
 }

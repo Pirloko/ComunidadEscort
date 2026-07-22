@@ -19,14 +19,19 @@ import { SafetyTipsSection } from '@/features/home/components/SafetyTipsSection'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { canAccessCommunity } from '@/lib/account-access'
 import { APP_TAGLINE } from '@/lib/constants'
+import { PUBLIC_HABITACIONES_PAGE_SIZE } from '@/lib/habitaciones'
 import { cn } from '@/lib/utils'
 import { resourceService } from '@/services/resource.service'
+import type { Resource } from '@/types/resources'
 import '@/features/home/home-landing.css'
 
 export function HomePage() {
   const { session, profile } = useAuth()
   const [cityId, setCityId] = useState('')
   const [soloBanoPrivado, setSoloBanoPrivado] = useState(false)
+  const [habitaciones, setHabitaciones] = useState<Resource[]>([])
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
 
   const { data: citiesWithRooms = [], isLoading: loadingCities } = useQuery({
     queryKey: ['public-habitacion-cities'],
@@ -41,10 +46,35 @@ export function HomePage() {
     [cityId, soloBanoPrivado],
   )
 
-  const { data: habitaciones = [], isLoading } = useQuery({
+  const { isLoading, isError, refetch } = useQuery({
     queryKey: ['public-habitaciones', filters],
-    queryFn: () => resourceService.getPublicHabitaciones(filters),
+    queryFn: async () => {
+      const page = await resourceService.getPublicHabitaciones({
+        ...filters,
+        limit: PUBLIC_HABITACIONES_PAGE_SIZE,
+        offset: 0,
+      })
+      setHabitaciones(page)
+      setHasMore(page.length >= PUBLIC_HABITACIONES_PAGE_SIZE)
+      return page
+    },
   })
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const page = await resourceService.getPublicHabitaciones({
+        ...filters,
+        limit: PUBLIC_HABITACIONES_PAGE_SIZE,
+        offset: habitaciones.length,
+      })
+      setHabitaciones((prev) => [...prev, ...page])
+      setHasMore(page.length >= PUBLIC_HABITACIONES_PAGE_SIZE)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const loggedIn = !!session
   const canEnter = profile ? canAccessCommunity(profile) : false
@@ -190,7 +220,20 @@ export function HomePage() {
             </div>
           )}
 
-          {!isLoading && habitaciones.length === 0 && (
+          {!isLoading && isError && (
+            <EmptyState
+              icon={Search}
+              title="No se pudieron cargar"
+              description="Revisa tu conexión e inténtalo de nuevo."
+              action={
+                <Button type="button" variant="outline" onClick={() => refetch()}>
+                  Reintentar
+                </Button>
+              }
+            />
+          )}
+
+          {!isLoading && !isError && habitaciones.length === 0 && (
             <EmptyState
               icon={Search}
               title="Sin habitaciones"
@@ -207,6 +250,17 @@ export function HomePage() {
                   detailTo={`/home/habitaciones/${h.id}`}
                 />
               ))}
+              {hasMore && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="habitacion-cta-secondary h-11 w-full rounded-xl font-semibold"
+                  disabled={loadingMore}
+                  onClick={() => void loadMore()}
+                >
+                  {loadingMore ? 'Cargando…' : 'Cargar más habitaciones'}
+                </Button>
+              )}
             </div>
           )}
         </section>

@@ -80,8 +80,11 @@ export function HabitacionMediaGallery({
             key={active.url}
             src={active.url}
             controls
+            controlsList="nodownload noplaybackrate"
+            disablePictureInPicture
             playsInline
             poster={posterUrl}
+            onContextMenu={(e) => e.preventDefault()}
             className="habitacion-gallery-media h-full w-full object-contain bg-black"
           />
         )}

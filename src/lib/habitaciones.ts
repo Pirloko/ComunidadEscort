@@ -66,6 +66,12 @@ export function habitacionCallPhone(
 export const HABITACION_CONTACT_NOTICE =
   'Para mayor información ponte en contacto con el encargado para reservar o consultar valores.'
 
+/** Máximo de fotos por habitación (UI + service + trigger SQL). */
+export const MAX_HABITACION_PHOTOS = 10
+
+/** Límite por defecto del listado público (/home). Suficiente para ~60–100 casas. */
+export const PUBLIC_HABITACIONES_PAGE_SIZE = 24
+
 export const CONSEJOS_ARRENDADORES = [
   'Pide siempre referencias a otros dueños antes de confirmar.',
   'Explica con claridad las reglas de la casa antes de cerrar el trato.',

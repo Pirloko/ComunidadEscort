@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/features/auth/hooks/useAuth'
 import { CityProvider } from '@/features/cities/context/CityContext'
 import { ThemeProvider } from '@/hooks/useTheme'
+import { DeviceGate } from '@/components/shared/DeviceGate'
 import { AppRouter } from './router'
 
 const queryClient = new QueryClient({
@@ -20,9 +21,11 @@ export function AppProviders() {
       <ThemeProvider>
         <BrowserRouter>
           <AuthProvider>
-            <CityProvider>
-              <AppRouter />
-            </CityProvider>
+            <DeviceGate>
+              <CityProvider>
+                <AppRouter />
+              </CityProvider>
+            </DeviceGate>
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>

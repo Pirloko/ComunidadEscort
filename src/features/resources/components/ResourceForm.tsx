@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { resourceSchema, type ResourceFormData } from '@/features/resources/schemas/resource.schema'
 import { RESOURCE_CATEGORIES } from '@/lib/resources'
-import { HABITACION_ATTR_LABELS } from '@/lib/habitaciones'
+import { HABITACION_ATTR_LABELS, MAX_HABITACION_PHOTOS } from '@/lib/habitaciones'
 import { normalizePhoneChile } from '@/lib/phone'
 import { resourceService } from '@/services/resource.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -484,9 +484,12 @@ export function ResourceForm({
               type="file"
               accept="image/jpeg,image/png,image/webp"
               multiple
+              disabled={existingPhotos.length + pendingFiles.length >= MAX_HABITACION_PHOTOS}
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? [])
-                setPendingFiles((prev) => [...prev, ...files].slice(0, 10))
+                const slots = Math.max(0, MAX_HABITACION_PHOTOS - existingPhotos.length)
+                setPendingFiles((prev) => [...prev, ...files].slice(0, slots))
+                e.target.value = ''
               }}
             />
             {pendingFiles.length > 0 && (
@@ -495,7 +498,8 @@ export function ResourceForm({
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              JPG, PNG o WebP — se convierten a WebP optimizado (máx. ~2,5 MB c/u).
+              JPG, PNG o WebP — se convierten a WebP con marca Comunidadescort (máx.{' '}
+              {MAX_HABITACION_PHOTOS} fotos, ~2,5 MB c/u).
             </p>
           </div>
 
@@ -506,6 +510,10 @@ export function ResourceForm({
                 <video
                   src={existingVideoUrl}
                   controls
+                  controlsList="nodownload noplaybackrate"
+                  disablePictureInPicture
+                  playsInline
+                  onContextMenu={(e) => e.preventDefault()}
                   className="max-h-56 w-full rounded-lg border bg-black"
                 />
                 <Button type="button" variant="outline" size="sm" onClick={() => void handleRemoveExistingVideo()}>

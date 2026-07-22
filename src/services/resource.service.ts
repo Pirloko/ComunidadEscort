@@ -46,9 +46,16 @@ const VIDEOS_BUCKET = 'resource-videos'
 const MAX_PHOTO_SIZE = 8 * 1024 * 1024 // antes de convertir a WebP
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024
 const MAX_VIDEO_DURATION_SEC = 60
+const MAX_HABITACION_PHOTOS = 10
+const DEFAULT_PUBLIC_LIST_LIMIT = 24
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime']
 const SIGNED_URL_TTL_SEC = 60 * 60 // 1 hora
+const SIGNED_VIDEO_TTL_SEC = 30 * 60 // 30 min — reduce ventana de descarga
+
+function escapeIlike(value: string): string {
+  return value.replace(/[%_,.()\\]/g, ' ').replace(/\s+/g, ' ').trim()
+}
 
 function sortPhotos(resource: Resource): Resource {
   if (resource.photos) {
@@ -82,29 +89,29 @@ async function resolvePhotoUrls(photos: ResourcePhoto[] | undefined): Promise<Re
   const resolved = await Promise.all(
     photos.map(async (photo) => {
       const path = storagePathFromUrl(photo.url)
-      if (!path) return photo
+      if (!path) return null
 
       const { data, error } = await supabase.storage
         .from(PHOTOS_BUCKET)
         .createSignedUrl(path, SIGNED_URL_TTL_SEC)
 
-      if (error || !data?.signedUrl) return photo
+      if (error || !data?.signedUrl) return null
       return { ...photo, url: data.signedUrl }
     }),
   )
-  return resolved
+  return resolved.filter((p): p is ResourcePhoto => p !== null)
 }
 
 async function resolveVideoUrl(videoUrl: string | null | undefined): Promise<string | null> {
   if (!videoUrl) return null
   const path = storagePathFromUrl(videoUrl, VIDEOS_BUCKET)
-  if (!path) return videoUrl
+  if (!path) return null
 
   const { data, error } = await supabase.storage
     .from(VIDEOS_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SEC)
+    .createSignedUrl(path, SIGNED_VIDEO_TTL_SEC)
 
-  if (error || !data?.signedUrl) return videoUrl
+  if (error || !data?.signedUrl) return null
   return data.signedUrl
 }
 
@@ -132,8 +139,47 @@ async function withSignedPhotos(resource: Resource): Promise<Resource> {
   return sorted
 }
 
+/** Listado: solo firma la cover (1ª foto). No firma video. */
+async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
+  return Promise.all(
+    resources.map(async (resource) => {
+      const sorted = sortPhotos({ ...resource, photos: resource.photos ? [...resource.photos] : [] })
+      const cover = sorted.photos?.slice(0, 1) ?? []
+      sorted.photos = await resolvePhotoUrls(cover)
+      sorted.video_url = null
+      return sorted
+    }),
+  )
+}
+
 async function withSignedPhotosList(resources: Resource[]): Promise<Resource[]> {
   return Promise.all(resources.map(withSignedPhotos))
+}
+
+async function moveStorageObject(
+  bucket: string,
+  fromPath: string,
+  toPath: string,
+): Promise<boolean> {
+  if (fromPath === toPath) return true
+  const { data: blob, error: dlError } = await supabase.storage.from(bucket).download(fromPath)
+  if (dlError || !blob) return false
+
+  const { error: upError } = await supabase.storage
+    .from(bucket)
+    .upload(toPath, blob, { upsert: true, contentType: blob.type || undefined })
+  if (upError) return false
+
+  await supabase.storage.from(bucket).remove([fromPath])
+  return true
+}
+
+function swapVisibilityPrefix(path: string, visibility: 'public' | 'private'): string | null {
+  const parts = path.split('/')
+  if (parts.length < 2) return null
+  if (parts[0] !== 'public' && parts[0] !== 'private') return null
+  if (parts[0] === visibility) return path
+  return [visibility, ...parts.slice(1)].join('/')
 }
 
 export const resourceService = {
@@ -154,9 +200,8 @@ export const resourceService = {
     if (params.cityId) query = query.eq('city_id', params.cityId)
     if (params.category) query = query.eq('category', params.category)
     if (params.search?.trim()) {
-      query = query.or(
-        `name.ilike.%${params.search}%,description.ilike.%${params.search}%`,
-      )
+      const q = escapeIlike(params.search)
+      if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`)
     }
     if (params.limit) query = query.limit(params.limit)
 
@@ -168,7 +213,21 @@ export const resourceService = {
   async getPublicHabitacionCities(): Promise<
     { id: string; name: string; slug: string; count: number }[]
   > {
-    const { data, error } = await supabase
+    const { data, error } = await supabase.rpc('get_public_habitacion_cities')
+
+    if (!error && data) {
+      return (data as Array<{ id: string; name: string; slug: string; count: number | string }>).map(
+        (row) => ({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          count: Number(row.count),
+        }),
+      )
+    }
+
+    // Fallback si el RPC aún no está aplicado en el proyecto
+    const { data: rows, error: fallbackError } = await supabase
       .from('resources')
       .select('city_id, city:cities!city_id(id, name, slug)')
       .eq('category', 'habitaciones_escort')
@@ -176,10 +235,10 @@ export const resourceService = {
       .eq('is_active', true)
       .eq('status', 'aprobada')
 
-    if (error) throw error
+    if (fallbackError) throw fallbackError
 
     const counts = new Map<string, { id: string; name: string; slug: string; count: number }>()
-    for (const row of (data ?? []) as unknown as Array<{
+    for (const row of (rows ?? []) as unknown as Array<{
       city_id: string
       city: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[] | null
     }>) {
@@ -195,6 +254,9 @@ export const resourceService = {
   },
 
   async getPublicHabitaciones(filters: PublicHabitacionFilters = {}): Promise<Resource[]> {
+    const limit = filters.limit ?? DEFAULT_PUBLIC_LIST_LIMIT
+    const offset = filters.offset ?? 0
+
     let query = supabase
       .from('resources')
       .select(PUBLIC_HABITACION_SELECT)
@@ -203,6 +265,7 @@ export const resourceService = {
       .eq('is_active', true)
       .eq('status', 'aprobada')
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (filters.cityId) query = query.eq('city_id', filters.cityId)
     if (filters.tiene_wifi) query = query.eq('tiene_wifi', true)
@@ -210,15 +273,15 @@ export const resourceService = {
     if (filters.pide_reserva) query = query.eq('pide_reserva', true)
     if (filters.acepta_parejas) query = query.eq('acepta_parejas', true)
     if (filters.search?.trim()) {
-      query = query.or(
-        `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,address.ilike.%${filters.search}%`,
-      )
+      const q = escapeIlike(filters.search)
+      if (q) {
+        query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,address.ilike.%${q}%`)
+      }
     }
-    if (filters.limit) query = query.limit(filters.limit)
 
     const { data, error } = await query
     if (error) throw error
-    return withSignedPhotosList((data ?? []) as unknown as Resource[])
+    return withSignedCovers((data ?? []) as unknown as Resource[])
   },
 
   async getPublicHabitacionById(resourceId: string): Promise<Resource | null> {
@@ -297,6 +360,17 @@ export const resourceService = {
   },
 
   async updateResource(resourceId: string, input: UpdateResourceInput): Promise<Resource> {
+    let previousIsPublic: boolean | null = null
+    if (typeof input.is_public === 'boolean') {
+      const { data: prev, error: prevError } = await supabase
+        .from('resources')
+        .select('is_public')
+        .eq('id', resourceId)
+        .maybeSingle()
+      if (prevError) throw prevError
+      previousIsPublic = prev?.is_public ?? null
+    }
+
     const { data, error } = await supabase
       .from('resources')
       .update(input)
@@ -305,6 +379,17 @@ export const resourceService = {
       .single()
 
     if (error) throw error
+
+    if (
+      typeof input.is_public === 'boolean' &&
+      previousIsPublic !== null &&
+      previousIsPublic !== input.is_public
+    ) {
+      await resourceService.syncHabitacionMediaVisibility(resourceId, input.is_public)
+      const refreshed = await resourceService.getResourceById(resourceId)
+      if (refreshed) return refreshed
+    }
+
     return withSignedPhotos(data as unknown as Resource)
   },
 
@@ -330,8 +415,73 @@ export const resourceService = {
   },
 
   async deleteResource(resourceId: string): Promise<void> {
+    const { data: photos } = await supabase
+      .from('resource_photos')
+      .select('url')
+      .eq('resource_id', resourceId)
+
+    const { data: resource } = await supabase
+      .from('resources')
+      .select('video_url')
+      .eq('id', resourceId)
+      .maybeSingle()
+
+    const photoPaths = (photos ?? [])
+      .map((p) => storagePathFromUrl(p.url))
+      .filter((p): p is string => !!p)
+    if (photoPaths.length > 0) {
+      await supabase.storage.from(PHOTOS_BUCKET).remove(photoPaths)
+    }
+
+    const videoPath = resource?.video_url
+      ? storagePathFromUrl(resource.video_url, VIDEOS_BUCKET)
+      : null
+    if (videoPath) {
+      await supabase.storage.from(VIDEOS_BUCKET).remove([videoPath])
+    }
+
     const { error } = await supabase.from('resources').delete().eq('id', resourceId)
     if (error) throw error
+  },
+
+  /** Mueve fotos/video entre prefijos public/ y private/ al cambiar visibilidad. */
+  async syncHabitacionMediaVisibility(resourceId: string, isPublic: boolean): Promise<void> {
+    const visibility = isPublic ? 'public' : 'private'
+
+    const { data: photos } = await supabase
+      .from('resource_photos')
+      .select('id, url')
+      .eq('resource_id', resourceId)
+
+    for (const photo of photos ?? []) {
+      const path = storagePathFromUrl(photo.url)
+      if (!path) continue
+      const next = swapVisibilityPrefix(path, visibility)
+      if (!next || next === path) continue
+      const ok = await moveStorageObject(PHOTOS_BUCKET, path, next)
+      if (ok) {
+        await supabase.from('resource_photos').update({ url: next }).eq('id', photo.id)
+      }
+    }
+
+    const { data: resource } = await supabase
+      .from('resources')
+      .select('video_url')
+      .eq('id', resourceId)
+      .maybeSingle()
+
+    if (resource?.video_url) {
+      const path = storagePathFromUrl(resource.video_url, VIDEOS_BUCKET)
+      if (path) {
+        const next = swapVisibilityPrefix(path, visibility)
+        if (next && next !== path) {
+          const ok = await moveStorageObject(VIDEOS_BUCKET, path, next)
+          if (ok) {
+            await supabase.from('resources').update({ video_url: next }).eq('id', resourceId)
+          }
+        }
+      }
+    }
   },
 
   async getUnverifiedResources(limit = 50): Promise<Resource[]> {
@@ -362,7 +512,8 @@ export const resourceService = {
 
     if (params?.onlyUnverified) query = query.eq('is_verified', false).eq('is_active', true)
     if (params?.search?.trim()) {
-      query = query.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`)
+      const q = escapeIlike(params.search)
+      if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`)
     }
     if (params?.limit) query = query.limit(params.limit)
 
@@ -389,7 +540,8 @@ export const resourceService = {
     if (params?.onlyActive) query = query.eq('is_active', true)
     if (params?.cityId) query = query.eq('city_id', params.cityId)
     if (params?.search?.trim()) {
-      query = query.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`)
+      const q = escapeIlike(params.search)
+      if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`)
     }
     if (params?.limit) query = query.limit(params.limit)
 
@@ -409,6 +561,15 @@ export const resourceService = {
     }
     if (file.size > MAX_PHOTO_SIZE) {
       throw new Error('La imagen no puede superar 8 MB antes de optimizar.')
+    }
+
+    const { count, error: countError } = await supabase
+      .from('resource_photos')
+      .select('*', { count: 'exact', head: true })
+      .eq('resource_id', resourceId)
+    if (countError) throw countError
+    if ((count ?? 0) >= MAX_HABITACION_PHOTOS) {
+      throw new Error(`Máximo ${MAX_HABITACION_PHOTOS} fotos por habitación.`)
     }
 
     const webp = await convertImageToWebp(file)
