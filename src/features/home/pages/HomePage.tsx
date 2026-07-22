@@ -59,20 +59,30 @@ export function HomePage() {
           <BrandLogo size="md" to="/home" tone="dark" className="h-12 max-w-[min(100%,220px)]" />
           <div className="flex shrink-0 items-center gap-1.5">
             {loggedIn && canEnter ? (
-              <Button asChild size="sm" variant="accent" className="gap-1 px-2.5">
+              <Button
+                asChild
+                size="sm"
+                variant="accent"
+                className="home-btn-enter h-9 gap-1.5 rounded-full px-3.5 font-semibold"
+              >
                 <Link to="/feed">
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span className="hidden xs:inline">Comunidad</span>
+                  <LayoutDashboard className="h-4 w-4 shrink-0" />
+                  Comunidad
                 </Link>
               </Button>
             ) : loggedIn ? (
-              <Button asChild size="sm" variant="outline">
+              <Button asChild size="sm" variant="outline" className="h-9 rounded-full px-3.5 font-medium">
                 <Link to="/cuenta-pendiente">Mi cuenta</Link>
               </Button>
             ) : (
-              <Button asChild size="sm" variant="accent" className="gap-1 px-2.5">
+              <Button
+                asChild
+                size="sm"
+                variant="accent"
+                className="home-btn-enter h-9 gap-1.5 rounded-full px-3.5 font-semibold"
+              >
                 <Link to="/login">
-                  <LogIn className="h-4 w-4" />
+                  <LogIn className="h-4 w-4 shrink-0" />
                   Entrar
                 </Link>
               </Button>
@@ -222,13 +232,17 @@ export function HomePage() {
                 privado, pensado para cuidarte.
               </p>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {!loggedIn ? (
                 <>
-                  <Button asChild variant="accent" className="w-full gap-2">
+                  <Button
+                    asChild
+                    variant="accent"
+                    className="home-btn-cta h-12 w-full gap-2 rounded-xl text-base font-semibold"
+                  >
                     <Link to="/register">
                       Solicitar acceso
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-4 w-4 shrink-0" />
                     </Link>
                   </Button>
                   <p className="text-center text-[11px] text-muted-foreground">
@@ -236,14 +250,18 @@ export function HomePage() {
                   </p>
                 </>
               ) : canEnter ? (
-                <Button asChild variant="accent" className="w-full gap-2">
+                <Button
+                  asChild
+                  variant="accent"
+                  className="home-btn-cta h-12 w-full gap-2 rounded-xl text-base font-semibold"
+                >
                   <Link to="/feed">
                     Ir al feed
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4 shrink-0" />
                   </Link>
                 </Button>
               ) : (
-                <Button asChild variant="outline" className="w-full">
+                <Button asChild variant="outline" className="h-12 w-full rounded-xl font-semibold">
                   <Link to="/cuenta-pendiente">Seguir mi solicitud</Link>
                 </Button>
               )}

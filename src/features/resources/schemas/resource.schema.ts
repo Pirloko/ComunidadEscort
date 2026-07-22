@@ -67,6 +67,7 @@ export const resourceSchema = z
     house_rules: z.string().max(4000).optional().or(z.literal('')),
     recibe_mujer: z.boolean().optional(),
     recibe_hombre: z.boolean().optional(),
+    recibe_trans: z.boolean().optional(),
     pide_reserva: z.boolean().optional(),
     pide_referencias: z.boolean().optional(),
     pide_doc_identidad: z.boolean().optional(),
@@ -76,7 +77,6 @@ export const resourceSchema = z
     tiene_camaras_seguridad: z.boolean().optional(),
     tiene_wifi: z.boolean().optional(),
     tiene_bano_privado: z.boolean().optional(),
-    tiene_kit_primeros_auxilios: z.boolean().optional(),
     tiene_extintor: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {

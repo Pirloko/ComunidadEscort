@@ -26,6 +26,7 @@ export interface HabitacionAttrs {
   contact_phone: string | null
   recibe_mujer: boolean
   recibe_hombre: boolean
+  recibe_trans: boolean
   pide_reserva: boolean
   pide_referencias: boolean
   pide_doc_identidad: boolean
@@ -35,7 +36,6 @@ export interface HabitacionAttrs {
   tiene_camaras_seguridad: boolean
   tiene_wifi: boolean
   tiene_bano_privado: boolean
-  tiene_kit_primeros_auxilios: boolean
   tiene_extintor: boolean
   /** Path o URL firmada del video (máx. 1) */
   video_url: string | null
@@ -91,6 +91,7 @@ export interface CreateResourceInput {
   house_rules?: string | null
   recibe_mujer?: boolean
   recibe_hombre?: boolean
+  recibe_trans?: boolean
   pide_reserva?: boolean
   pide_referencias?: boolean
   pide_doc_identidad?: boolean
@@ -100,7 +101,6 @@ export interface CreateResourceInput {
   tiene_camaras_seguridad?: boolean
   tiene_wifi?: boolean
   tiene_bano_privado?: boolean
-  tiene_kit_primeros_auxilios?: boolean
   tiene_extintor?: boolean
   video_url?: string | null
 }
@@ -124,6 +124,7 @@ export interface UpdateResourceInput {
   house_rules?: string | null
   recibe_mujer?: boolean
   recibe_hombre?: boolean
+  recibe_trans?: boolean
   pide_reserva?: boolean
   pide_referencias?: boolean
   pide_doc_identidad?: boolean
@@ -133,7 +134,6 @@ export interface UpdateResourceInput {
   tiene_camaras_seguridad?: boolean
   tiene_wifi?: boolean
   tiene_bano_privado?: boolean
-  tiene_kit_primeros_auxilios?: boolean
   tiene_extintor?: boolean
   video_url?: string | null
   is_verified?: boolean

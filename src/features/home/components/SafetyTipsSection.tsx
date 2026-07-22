@@ -16,9 +16,9 @@ export function SafetyTipsSection() {
             Consejos para un arriendo seguro
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            <strong className="font-medium text-foreground">Importante:</strong> filtrar a
-            quienes entran al inmueble es responsabilidad del dueño. Pide referencias e
-            información antes de confirmar.
+            <strong className="font-medium text-foreground">Importante:</strong> filtrar
+            quién entra al inmueble es responsabilidad del dueño. Pide referencias e
+            información completa antes de confirmar.
           </p>
         </div>
       </div>

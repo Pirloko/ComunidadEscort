@@ -10,17 +10,24 @@ export const HABITACION_ATTR_LABELS = [
   { key: 'tiene_camaras_seguridad', label: '¿Tiene cámaras de seguridad?' },
   { key: 'tiene_wifi', label: '¿Tiene Wifi?' },
   { key: 'tiene_bano_privado', label: '¿Tiene baño privado?' },
-  { key: 'tiene_kit_primeros_auxilios', label: '¿Tiene kit de primeros auxilios?' },
   { key: 'tiene_extintor', label: '¿Tiene extintor?' },
 ] as const
 
 export type HabitacionAttrKey = (typeof HABITACION_ATTR_LABELS)[number]['key']
 
-export function getRecibeALabel(recibeMujer: boolean, recibeHombre: boolean): string {
-  if (recibeMujer && recibeHombre) return 'Mujer y Hombre'
-  if (recibeMujer) return 'Mujer'
-  if (recibeHombre) return 'Hombre'
-  return 'No especificado'
+export function getRecibeALabel(
+  recibeMujer: boolean,
+  recibeHombre: boolean,
+  recibeTrans = false,
+): string {
+  const parts: string[] = []
+  if (recibeMujer) parts.push('Mujer')
+  if (recibeHombre) parts.push('Hombre')
+  if (recibeTrans) parts.push('Trans')
+  if (parts.length === 0) return 'No especificado'
+  if (parts.length === 1) return parts[0]
+  if (parts.length === 2) return `${parts[0]} y ${parts[1]}`
+  return `${parts[0]}, ${parts[1]} y ${parts[2]}`
 }
 
 export function whatsappUrl(phone: string, text?: string): string {
@@ -38,26 +45,47 @@ export function primaryContactPhone(
   return whatsapp || contact || phone || null
 }
 
+/** Número exclusivo para WhatsApp (no usa el de llamada). */
+export function habitacionWhatsappPhone(
+  whatsapp: string | null | undefined,
+): string | null {
+  const value = whatsapp?.trim()
+  return value || null
+}
+
+/** Número para llamar — solo contact_phone / phone; nunca el de WhatsApp. */
+export function habitacionCallPhone(
+  contact: string | null | undefined,
+  phone: string | null | undefined,
+): string | null {
+  const value = contact?.trim() || phone?.trim()
+  return value || null
+}
+
+/** Frase fija en detalle de todas las habitaciones escort. */
+export const HABITACION_CONTACT_NOTICE =
+  'Para mayor información ponte en contacto con el encargado para reservar o consultar valores.'
+
 export const CONSEJOS_ARRENDADORES = [
-  'No aceptes personas que han dejado deudas en otros hospedajes.',
-  'No aceptes personas que han dejado destrozos en otros hospedajes.',
-  'Asegúrate de pedir referencias con otros dueños.',
-  'No acumules pagos pendientes (cobrar es tu responsabilidad).',
-  'No aceptes personas que vengan de agencias virtuales.',
-  'Deja claras tus reglas y normas de la casa antes de arrendar.',
-  'Cuida y respeta a quienes cumplen; ellas volverán.',
-  'Entrega la habitación completamente limpia.',
+  'Pide siempre referencias a otros dueños antes de confirmar.',
+  'Explica con claridad las reglas de la casa antes de cerrar el trato.',
+  'No recibas a quien haya dejado deudas en otros hospedajes.',
+  'No recibas a quien haya dejado destrozos o daños en otras casas.',
+  'Evita arrendamientos que lleguen desde agencias virtuales.',
+  'Cobra al día: no acumules pagos pendientes; cobrar es tu responsabilidad.',
+  'Entrega la habitación limpia y en buenas condiciones.',
+  'Cuida y respeta a quienes cumplen: ellas vuelven y recomiendan.',
 ]
 
 export const CONSEJOS_PASAJEROS = [
-  'No vayas a casas funadas: no te llegarán clientes.',
-  'No aceptes que te entreguen una habitación sucia.',
-  'Pide referencias de la casa a tus colegas.',
-  'Antes de llegar, pide toda la información necesaria (esa es tu responsabilidad).',
-  'Antes de viajar, lee las reglas de la casa.',
-  'Sé puntual y responsable en tus pagos.',
-  'Tu celular tiene cámara: puedes registrar cualquier anormalidad.',
-  'Si no te gusta el lugar que elegiste, cámbiate lo antes posible.',
-  'Cuida la limpieza del lugar y respeta a los demás.',
-  'Cuida los hospedajes: no te cierres las puertas.',
+  'Pide referencias de la casa a tus colegas antes de viajar.',
+  'Lee las reglas del hospedaje antes de confirmar o viajar.',
+  'Antes de llegar, aclara todo lo que necesites saber: eso también es tu responsabilidad.',
+  'No vayas a casas funadas: el flujo de clientes suele caer.',
+  'No aceptes una habitación sucia o en mal estado.',
+  'Sé puntual y responsable con tus pagos.',
+  'Si ocurre algo irregular, documenta con tu celular (fotos o video).',
+  'Si el lugar no te convence, cámbiate lo antes posible.',
+  'Mantén limpia tu habitación y respeta a las demás.',
+  'Cuida los hospedajes buenos: no te cierres puertas a futuro.',
 ]

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { MapPin, MessageCircle, Wifi, Users, ArrowRight, Bath } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { whatsappUrl, primaryContactPhone } from '@/lib/habitaciones'
+import { whatsappUrl, habitacionWhatsappPhone } from '@/lib/habitaciones'
 import type { Resource } from '@/types/resources'
 
 interface HabitacionCardProps {
@@ -11,14 +11,10 @@ interface HabitacionCardProps {
 
 export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
   const photo = habitacion.photos?.[0]?.url
-  const phone = primaryContactPhone(
-    habitacion.whatsapp_phone,
-    habitacion.contact_phone,
-    habitacion.phone,
-  )
+  const whatsappPhone = habitacionWhatsappPhone(habitacion.whatsapp_phone)
 
   return (
-    <article className="home-card-lift group overflow-hidden rounded-xl border border-white/8 bg-card/80">
+    <article className="home-card-lift group overflow-hidden rounded-2xl border border-white/8 bg-card/80">
       <Link to={detailTo} className="block overflow-hidden">
         <div className="relative aspect-[4/3] bg-muted">
           {photo ? (
@@ -76,26 +72,35 @@ export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
           )}
         </div>
 
-        <div className="flex gap-2 pt-1">
-          {phone && (
-            <Button asChild size="sm" className="flex-1 gap-1 bg-emerald-700 hover:bg-emerald-600">
+        <div className="flex gap-2.5 pt-1">
+          {whatsappPhone && (
+            <Button
+              asChild
+              size="sm"
+              className="habitacion-cta-primary h-11 flex-1 gap-2 rounded-xl px-3 text-[0.8125rem] font-semibold text-white"
+            >
               <a
                 href={whatsappUrl(
-                  phone,
+                  whatsappPhone,
                   `Hola, vi "${habitacion.name}" en Comunidadescort y quiero consultar arriendo.`,
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4 shrink-0" />
                 WhatsApp
               </a>
             </Button>
           )}
-          <Button asChild size="sm" variant="outline" className="flex-1 gap-1 border-white/15">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="habitacion-cta-secondary h-11 flex-1 gap-1.5 rounded-xl border-white/15 px-3 text-[0.8125rem] font-semibold"
+          >
             <Link to={detailTo}>
               Ver más
-              <ArrowRight className="h-3.5 w-3.5" />
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-80" />
             </Link>
           </Button>
         </div>

@@ -1,6 +1,5 @@
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import {
   ArrowLeft,
   MapPin,
@@ -21,6 +20,7 @@ import { ResourceCategoryBadge } from '@/features/resources/components/ResourceC
 import { ResourceCommentThread } from '@/features/resources/components/ResourceCommentThread'
 import { ResourceReviewSection } from '@/features/resources/components/ResourceReviewSection'
 import { HabitacionAttrsList } from '@/features/home/components/HabitacionAttrsList'
+import { HabitacionMediaGallery } from '@/features/home/components/HabitacionMediaGallery'
 import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
 import { StarRating } from '@/components/shared/StarRating'
@@ -28,17 +28,17 @@ import { ShareWhatsAppButton } from '@/components/shared/ShareWhatsAppButton'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime } from '@/lib/format'
 import { shareCasaPageText } from '@/lib/share'
-import { primaryContactPhone, whatsappUrl } from '@/lib/habitaciones'
+import { HABITACION_CONTACT_NOTICE, habitacionCallPhone, habitacionWhatsappPhone, whatsappUrl } from '@/lib/habitaciones'
 import { resourceService } from '@/services/resource.service'
 import { resourceCommentService } from '@/services/resource-comment.service'
 import { resourceReviewService } from '@/services/resource-review.service'
+import '@/features/home/home-landing.css'
 
 export function ResourceDetailPage() {
   const { resourceId } = useParams<{ resourceId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const { user, profile } = useAuth()
-  const [photoIdx, setPhotoIdx] = useState(0)
   const fromCasas = location.pathname.startsWith('/casas')
 
   const { data: resource, isLoading, isError, refetch } = useQuery({
@@ -74,8 +74,11 @@ export function ResourceDetailPage() {
       ? `https://www.google.com/maps?q=${resource.latitude},${resource.longitude}`
       : null)
 
-  const contact = resource
-    ? primaryContactPhone(resource.whatsapp_phone, resource.contact_phone, resource.phone)
+  const whatsappPhone = resource
+    ? habitacionWhatsappPhone(resource.whatsapp_phone)
+    : null
+  const callPhone = resource
+    ? habitacionCallPhone(resource.contact_phone, resource.phone)
     : null
 
   const handleDelete = async () => {
@@ -97,9 +100,6 @@ export function ResourceDetailPage() {
     return <ErrorState title="Dato no encontrado" onRetry={() => refetch()} />
   }
 
-  const photos = resource.photos ?? []
-  const currentPhoto = photos[photoIdx]?.url
-
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Link
@@ -111,40 +111,13 @@ export function ResourceDetailPage() {
       </Link>
 
       <Card className="overflow-hidden">
-        {isHabitacion && photos.length > 0 && (
-          <>
-            <div className="aspect-video bg-muted">
-              <img src={currentPhoto} alt={resource.name} className="h-full w-full object-cover" />
-            </div>
-            {photos.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto p-3">
-                {photos.map((p, i) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPhotoIdx(i)}
-                    className={`h-14 w-20 shrink-0 overflow-hidden rounded-md border-2 ${
-                      i === photoIdx ? 'border-accent' : 'border-transparent'
-                    }`}
-                  >
-                    <img src={p.url} alt="" className="h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {isHabitacion && resource.video_url && (
-          <div className="border-t p-3">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">Video</p>
-            <video
-              src={resource.video_url}
-              controls
-              playsInline
-              className="aspect-video w-full rounded-lg bg-black"
-            />
-          </div>
+        {isHabitacion && (
+          <HabitacionMediaGallery
+            key={`${resource.id}-${resource.photos?.length ?? 0}-${resource.video_url ?? ''}`}
+            photos={resource.photos}
+            videoUrl={resource.video_url}
+            alt={resource.name}
+          />
         )}
 
         <CardHeader className="pb-3">
@@ -225,27 +198,52 @@ export function ResourceDetailPage() {
 
           {resource.status === 'aprobada' && (
             <>
-              {isHabitacion && contact && (
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button asChild className="flex-1 gap-2 bg-emerald-600 hover:bg-emerald-700">
-                    <a
-                      href={whatsappUrl(
-                        contact,
-                        `Hola, vi "${resource.name}" en Comunidadescort y quiero consultar arriendo.`,
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
+              {isHabitacion && (
+                <p className="rounded-xl border border-accent/20 bg-accent/10 px-3.5 py-3 text-sm leading-relaxed text-foreground/90">
+                  {HABITACION_CONTACT_NOTICE}
+                </p>
+              )}
+
+              {isHabitacion && (whatsappPhone || callPhone) && (
+                <div
+                  className={`grid gap-3 ${
+                    whatsappPhone && callPhone ? 'sm:grid-cols-2' : ''
+                  }`}
+                >
+                  {whatsappPhone && (
+                    <Button
+                      asChild
+                      className="habitacion-cta-primary h-12 gap-2.5 rounded-xl text-base font-semibold text-white"
                     >
-                      <MessageCircle className="h-4 w-4" />
-                      WhatsApp
-                    </a>
-                  </Button>
-                  <Button asChild variant="outline" className="flex-1 gap-2">
-                    <a href={`tel:${contact}`}>
-                      <Phone className="h-4 w-4" />
-                      Llamar
-                    </a>
-                  </Button>
+                      <a
+                        href={whatsappUrl(
+                          whatsappPhone,
+                          `Hola, vi "${resource.name}" en Comunidadescort y quiero consultar arriendo.`,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span className="habitacion-cta-icon habitacion-cta-icon-wa">
+                          <MessageCircle className="h-4 w-4" />
+                        </span>
+                        WhatsApp
+                      </a>
+                    </Button>
+                  )}
+                  {callPhone && (
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="habitacion-cta-call h-12 gap-2.5 rounded-xl text-base font-semibold"
+                    >
+                      <a href={`tel:${callPhone}`}>
+                        <span className="habitacion-cta-icon habitacion-cta-icon-call">
+                          <Phone className="h-4 w-4" />
+                        </span>
+                        Llamar
+                      </a>
+                    </Button>
+                  )}
                 </div>
               )}
 

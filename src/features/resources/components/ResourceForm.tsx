@@ -83,6 +83,7 @@ export function ResourceForm({
       house_rules: initialData?.house_rules ?? '',
       recibe_mujer: initialData?.recibe_mujer ?? true,
       recibe_hombre: initialData?.recibe_hombre ?? false,
+      recibe_trans: initialData?.recibe_trans ?? false,
       pide_reserva: initialData?.pide_reserva ?? false,
       pide_referencias: initialData?.pide_referencias ?? false,
       pide_doc_identidad: initialData?.pide_doc_identidad ?? false,
@@ -92,7 +93,6 @@ export function ResourceForm({
       tiene_camaras_seguridad: initialData?.tiene_camaras_seguridad ?? false,
       tiene_wifi: initialData?.tiene_wifi ?? false,
       tiene_bano_privado: initialData?.tiene_bano_privado ?? false,
-      tiene_kit_primeros_auxilios: initialData?.tiene_kit_primeros_auxilios ?? false,
       tiene_extintor: initialData?.tiene_extintor ?? false,
     },
   })
@@ -128,6 +128,7 @@ export function ResourceForm({
         house_rules: isHabitacionSubmit ? data.house_rules || null : null,
         recibe_mujer: !!data.recibe_mujer,
         recibe_hombre: !!data.recibe_hombre,
+        recibe_trans: !!data.recibe_trans,
         pide_reserva: !!data.pide_reserva,
         pide_referencias: !!data.pide_referencias,
         pide_doc_identidad: !!data.pide_doc_identidad,
@@ -137,7 +138,6 @@ export function ResourceForm({
         tiene_camaras_seguridad: !!data.tiene_camaras_seguridad,
         tiene_wifi: !!data.tiene_wifi,
         tiene_bano_privado: !!data.tiene_bano_privado,
-        tiene_kit_primeros_auxilios: !!data.tiene_kit_primeros_auxilios,
         tiene_extintor: !!data.tiene_extintor,
       }
 
@@ -431,6 +431,16 @@ export function ResourceForm({
                 render={({ field }) => (
                   <label className="flex items-center justify-between gap-2 text-sm">
                     Recibe hombre
+                    <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                  </label>
+                )}
+              />
+              <Controller
+                name="recibe_trans"
+                control={control}
+                render={({ field }) => (
+                  <label className="flex items-center justify-between gap-2 text-sm">
+                    Recibe trans
                     <Switch checked={!!field.value} onCheckedChange={field.onChange} />
                   </label>
                 )}
