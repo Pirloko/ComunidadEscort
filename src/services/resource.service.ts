@@ -101,7 +101,7 @@ async function withSignedPhotosList(resources: Resource[]): Promise<Resource[]> 
 
 export const resourceService = {
   async getResources(params: {
-    cityId: string
+    cityId?: string
     category?: ResourceCategory
     search?: string
     limit?: number
@@ -109,12 +109,12 @@ export const resourceService = {
     let query = supabase
       .from('resources')
       .select(RESOURCE_SELECT)
-      .eq('city_id', params.cityId)
       .eq('status', 'aprobada')
       .eq('is_active', true)
       .order('is_verified', { ascending: false })
       .order('created_at', { ascending: false })
 
+    if (params.cityId) query = query.eq('city_id', params.cityId)
     if (params.category) query = query.eq('category', params.category)
     if (params.search?.trim()) {
       query = query.or(
@@ -126,6 +126,35 @@ export const resourceService = {
     const { data, error } = await query
     if (error) throw error
     return withSignedPhotosList((data ?? []) as unknown as Resource[])
+  },
+
+  async getPublicHabitacionCities(): Promise<
+    { id: string; name: string; slug: string; count: number }[]
+  > {
+    const { data, error } = await supabase
+      .from('resources')
+      .select('city_id, city:cities!city_id(id, name, slug)')
+      .eq('category', 'habitaciones_escort')
+      .eq('is_public', true)
+      .eq('is_active', true)
+      .eq('status', 'aprobada')
+
+    if (error) throw error
+
+    const counts = new Map<string, { id: string; name: string; slug: string; count: number }>()
+    for (const row of (data ?? []) as unknown as Array<{
+      city_id: string
+      city: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[] | null
+    }>) {
+      const raw = row.city
+      const city = Array.isArray(raw) ? raw[0] : raw
+      if (!city?.id) continue
+      const prev = counts.get(city.id)
+      if (prev) prev.count += 1
+      else counts.set(city.id, { id: city.id, name: city.name, slug: city.slug, count: 1 })
+    }
+
+    return [...counts.values()].sort((a, b) => a.name.localeCompare(b.name, 'es'))
   },
 
   async getPublicHabitaciones(filters: PublicHabitacionFilters = {}): Promise<Resource[]> {
@@ -294,6 +323,33 @@ export const resourceService = {
       .order('created_at', { ascending: false })
 
     if (params?.onlyUnverified) query = query.eq('is_verified', false).eq('is_active', true)
+    if (params?.search?.trim()) {
+      query = query.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`)
+    }
+    if (params?.limit) query = query.limit(params.limit)
+
+    const { data, error } = await query
+    if (error) throw error
+    return withSignedPhotosList((data ?? []) as unknown as Resource[])
+  },
+
+  async getHabitacionesForAdmin(params?: {
+    search?: string
+    cityId?: string
+    /** Si false, solo activas. Default: todas (activas + pausadas). */
+    onlyActive?: boolean
+    limit?: number
+  }): Promise<Resource[]> {
+    let query = supabase
+      .from('resources')
+      .select(RESOURCE_SELECT)
+      .eq('category', 'habitaciones_escort')
+      .eq('status', 'aprobada')
+      .order('is_active', { ascending: false })
+      .order('created_at', { ascending: false })
+
+    if (params?.onlyActive) query = query.eq('is_active', true)
+    if (params?.cityId) query = query.eq('city_id', params.cityId)
     if (params?.search?.trim()) {
       query = query.or(`name.ilike.%${params.search}%,description.ilike.%${params.search}%`)
     }

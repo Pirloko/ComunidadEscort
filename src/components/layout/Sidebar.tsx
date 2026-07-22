@@ -15,7 +15,7 @@ import {
   BedDouble,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { APP_NAME } from '@/lib/constants'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCity } from '@/features/cities/context/CityContext'
 import { moderationService } from '@/services/moderation.service'
@@ -24,11 +24,10 @@ import { Button } from '@/components/ui/button'
 
 const NAV_ITEMS = [
   { to: '/feed', label: 'Inicio', icon: Home },
-  { to: '/home', label: 'Habitaciones', icon: BedDouble, match: '/home' },
   { to: '/forum', label: 'Foro', icon: MessageSquare },
   { to: '/alerts', label: 'Alertas', icon: ShieldAlert },
-  { to: '/resources', label: 'Datos de todo', icon: MapPin },
-  { to: '/chat', label: 'Mensajes', icon: MessageCircle, match: '/chat' },
+  { to: '/casas', label: 'Casas', icon: BedDouble },
+  { to: '/chat', label: 'Chat', icon: MessageCircle, match: '/chat' },
   { to: '/members', label: 'Miembros', icon: Users, match: '/members' },
   { to: '/bookmarks', label: 'Guardados', icon: Bookmark, match: '/bookmarks' },
   { to: '/profile/edit', label: 'Perfil', icon: User, match: '/profile' },
@@ -54,18 +53,17 @@ export function Sidebar() {
     refetchInterval: 60000,
   })
 
-  const { data: unverifiedCount = 0 } = useQuery({
-    queryKey: ['admin-unverified-count'],
-    queryFn: () => adminService.getUnverifiedResourcesCount(),
+  const { data: pendingUsersCount = 0 } = useQuery({
+    queryKey: ['admin-pending-users-count'],
+    queryFn: () => adminService.getPendingUsersCount(),
     enabled: isAdmin,
-    refetchInterval: 60000,
+    refetchInterval: 30000,
   })
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r bg-card lg:flex">
-      <div className="flex h-14 items-center gap-2 border-b px-4">
-        <Shield className="h-6 w-6 text-accent" />
-        <span className="font-bold text-primary">{APP_NAME}</span>
+      <div className="flex h-14 items-center border-b px-3">
+        <BrandLogo size="md" to="/feed" className="h-11 max-w-[220px]" />
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3">
@@ -123,9 +121,9 @@ export function Sidebar() {
               >
                 <Settings2 className="h-4 w-4" />
                 Administración
-                {unverifiedCount > 0 && (
+                {pendingUsersCount > 0 && (
                   <span className="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-white">
-                    {unverifiedCount > 9 ? '9+' : unverifiedCount}
+                    {pendingUsersCount > 9 ? '9+' : pendingUsersCount}
                   </span>
                 )}
               </Link>

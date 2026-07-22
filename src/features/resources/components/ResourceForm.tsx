@@ -16,15 +16,24 @@ import { resourceService } from '@/services/resource.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCity } from '@/features/cities/context/CityContext'
 import type { Resource, ResourcePhoto } from '@/types/resources'
+import type { ResourceCategory } from '@/types/database'
 
 interface ResourceFormProps {
   cityId: string
   authorId: string
   initialData?: Resource
+  /** Fija la categoría (oculta el selector). Útil en admin de casas. */
+  forceCategory?: ResourceCategory
   onSuccess: (resource: Resource) => void
 }
 
-export function ResourceForm({ cityId, authorId, initialData, onSuccess }: ResourceFormProps) {
+export function ResourceForm({
+  cityId,
+  authorId,
+  initialData,
+  forceCategory,
+  onSuccess,
+}: ResourceFormProps) {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const { cities } = useCity()
@@ -53,7 +62,7 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
     mode: 'onBlur',
     defaultValues: {
       city_id: initialData?.city_id ?? cityId,
-      category: initialData?.category ?? 'otros',
+      category: forceCategory ?? initialData?.category ?? 'otros',
       name: initialData?.name ?? '',
       description: initialData?.description ?? '',
       phone: initialData?.phone ?? '',
@@ -84,32 +93,34 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
   })
 
   const category = watch('category')
-  const isHabitacion = category === 'habitaciones_escort'
+  const isHabitacion = (forceCategory ?? category) === 'habitaciones_escort'
 
   const onSubmit = async (data: ResourceFormData) => {
     setError(null)
     try {
-      if (data.category === 'habitaciones_escort' && !isAdmin) {
+      if ((forceCategory ?? data.category) === 'habitaciones_escort' && !isAdmin) {
         throw new Error('Solo administradoras pueden publicar habitaciones para escort.')
       }
 
+      const isHabitacionSubmit = (forceCategory ?? data.category) === 'habitaciones_escort'
+
       const payload = {
         city_id: data.city_id,
-        category: data.category,
+        category: forceCategory ?? data.category,
         name: data.name,
         description: data.description || null,
         phone: data.phone || null,
         address: data.address || null,
-        latitude: data.latitude ? Number(data.latitude) : null,
-        longitude: data.longitude ? Number(data.longitude) : null,
-        google_maps_url: data.google_maps_url || null,
-        website: data.website || null,
-        instagram_url: data.instagram_url || null,
-        facebook_url: data.facebook_url || null,
+        latitude: isHabitacionSubmit ? null : data.latitude ? Number(data.latitude) : null,
+        longitude: isHabitacionSubmit ? null : data.longitude ? Number(data.longitude) : null,
+        google_maps_url: isHabitacionSubmit ? null : data.google_maps_url || null,
+        website: isHabitacionSubmit ? null : data.website || null,
+        instagram_url: isHabitacionSubmit ? null : data.instagram_url || null,
+        facebook_url: isHabitacionSubmit ? null : data.facebook_url || null,
         whatsapp_phone: data.whatsapp_phone ? normalizePhoneChile(data.whatsapp_phone) : null,
         contact_phone: data.contact_phone ? normalizePhoneChile(data.contact_phone) : null,
-        is_public: data.category === 'habitaciones_escort' ? !!data.is_public : false,
-        house_rules: data.category === 'habitaciones_escort' ? data.house_rules || null : null,
+        is_public: isHabitacionSubmit ? !!data.is_public : false,
+        house_rules: isHabitacionSubmit ? data.house_rules || null : null,
         recibe_mujer: !!data.recibe_mujer,
         recibe_hombre: !!data.recibe_hombre,
         pide_reserva: !!data.pide_reserva,
@@ -178,28 +189,36 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
         {errors.city_id && <p className="text-sm text-destructive">{errors.city_id.message}</p>}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="category">Categoría</Label>
-        <select
-          id="category"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          {...register('category')}
-        >
-          {categories.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        {errors.category && (
-          <p className="text-sm text-destructive">{errors.category.message}</p>
-        )}
-        {isHabitacion && (
-          <p className="text-xs text-muted-foreground">
-            Solo admin publica habitaciones. Marca &quot;Visible en /home&quot; para el listado público.
-          </p>
-        )}
-      </div>
+      {!forceCategory && (
+        <div className="space-y-2">
+          <Label htmlFor="category">Categoría</Label>
+          <select
+            id="category"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            {...register('category')}
+          >
+            {categories.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {errors.category && (
+            <p className="text-sm text-destructive">{errors.category.message}</p>
+          )}
+          {isHabitacion && (
+            <p className="text-xs text-muted-foreground">
+              Solo admin publica habitaciones. Marca &quot;Visible en /home&quot; para el listado público.
+            </p>
+          )}
+        </div>
+      )}
+      {forceCategory === 'habitaciones_escort' && (
+        <p className="text-xs text-muted-foreground">
+          Habitación para escort. Marca &quot;Visible en /home&quot; si quieres que aparezca en el listado
+          público.
+        </p>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="name">{isHabitacion ? 'Nombre del hospedaje' : 'Nombre del servicio'}</Label>
@@ -243,66 +262,74 @@ export function ResourceForm({ cityId, authorId, initialData, onSuccess }: Resou
           <Input id="address" placeholder="Calle, comuna..." {...register('address')} />
           {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="latitude">Latitud (opcional)</Label>
-            <Input id="latitude" type="text" placeholder="-33.4489" {...register('latitude')} />
-            {errors.latitude && (
-              <p className="text-sm text-destructive">{errors.latitude.message}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="longitude">Longitud (opcional)</Label>
-            <Input id="longitude" type="text" placeholder="-70.6693" {...register('longitude')} />
-            {errors.longitude && (
-              <p className="text-sm text-destructive">{errors.longitude.message}</p>
-            )}
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="google_maps_url">Enlace de Google Maps (opcional)</Label>
-          <Input
-            id="google_maps_url"
-            placeholder="https://maps.google.com/..."
-            {...register('google_maps_url')}
-          />
-          {errors.google_maps_url && (
-            <p className="text-sm text-destructive">{errors.google_maps_url.message}</p>
-          )}
-        </div>
+        {!isHabitacion && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="latitude">Latitud (opcional)</Label>
+                <Input id="latitude" type="text" placeholder="-33.4489" {...register('latitude')} />
+                {errors.latitude && (
+                  <p className="text-sm text-destructive">{errors.latitude.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="longitude">Longitud (opcional)</Label>
+                <Input id="longitude" type="text" placeholder="-70.6693" {...register('longitude')} />
+                {errors.longitude && (
+                  <p className="text-sm text-destructive">{errors.longitude.message}</p>
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="google_maps_url">Enlace de Google Maps (opcional)</Label>
+              <Input
+                id="google_maps_url"
+                placeholder="https://maps.google.com/..."
+                {...register('google_maps_url')}
+              />
+              {errors.google_maps_url && (
+                <p className="text-sm text-destructive">{errors.google_maps_url.message}</p>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="space-y-3 rounded-lg border p-4">
-        <h3 className="text-sm font-semibold">Redes y contacto</h3>
-        <div className="space-y-2">
-          <Label htmlFor="website">Sitio web (opcional)</Label>
-          <Input id="website" placeholder="https://..." {...register('website')} />
-          {errors.website && <p className="text-sm text-destructive">{errors.website.message}</p>}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="instagram_url">Instagram (opcional)</Label>
-            <Input
-              id="instagram_url"
-              placeholder="https://instagram.com/..."
-              {...register('instagram_url')}
-            />
-            {errors.instagram_url && (
-              <p className="text-sm text-destructive">{errors.instagram_url.message}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="facebook_url">Facebook (opcional)</Label>
-            <Input
-              id="facebook_url"
-              placeholder="https://facebook.com/..."
-              {...register('facebook_url')}
-            />
-            {errors.facebook_url && (
-              <p className="text-sm text-destructive">{errors.facebook_url.message}</p>
-            )}
-          </div>
-        </div>
+        <h3 className="text-sm font-semibold">{isHabitacion ? 'Contacto' : 'Redes y contacto'}</h3>
+        {!isHabitacion && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="website">Sitio web (opcional)</Label>
+              <Input id="website" placeholder="https://..." {...register('website')} />
+              {errors.website && <p className="text-sm text-destructive">{errors.website.message}</p>}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="instagram_url">Instagram (opcional)</Label>
+                <Input
+                  id="instagram_url"
+                  placeholder="https://instagram.com/..."
+                  {...register('instagram_url')}
+                />
+                {errors.instagram_url && (
+                  <p className="text-sm text-destructive">{errors.instagram_url.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="facebook_url">Facebook (opcional)</Label>
+                <Input
+                  id="facebook_url"
+                  placeholder="https://facebook.com/..."
+                  {...register('facebook_url')}
+                />
+                {errors.facebook_url && (
+                  <p className="text-sm text-destructive">{errors.facebook_url.message}</p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="whatsapp_phone">

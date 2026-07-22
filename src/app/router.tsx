@@ -53,6 +53,9 @@ const MyAlertsPage = lazy(() =>
 const ResourcesPage = lazy(() =>
   import('@/features/resources/pages/ResourcesPage').then((m) => ({ default: m.ResourcesPage })),
 )
+const CasasPage = lazy(() =>
+  import('@/features/resources/pages/CasasPage').then((m) => ({ default: m.CasasPage })),
+)
 const ResourceDetailPage = lazy(() =>
   import('@/features/resources/pages/ResourceDetailPage').then((m) => ({
     default: m.ResourceDetailPage,
@@ -122,9 +125,12 @@ const AdminUsersPage = lazy(() =>
 const AdminCitiesPage = lazy(() =>
   import('@/features/admin/pages/AdminCitiesPage').then((m) => ({ default: m.AdminCitiesPage })),
 )
-const AdminResourcesPage = lazy(() =>
-  import('@/features/admin/pages/AdminResourcesPage').then((m) => ({
-    default: m.AdminResourcesPage,
+const AdminCasasPage = lazy(() =>
+  import('@/features/admin/pages/AdminCasasPage').then((m) => ({ default: m.AdminCasasPage })),
+)
+const AdminCasaFormPage = lazy(() =>
+  import('@/features/admin/pages/AdminCasaFormPage').then((m) => ({
+    default: m.AdminCasaFormPage,
   })),
 )
 const MembersPage = lazy(() =>
@@ -212,6 +218,8 @@ export function AppRouter() {
         <Route path="/alerts/mine" element={<S><MyAlertsPage /></S>} />
         <Route path="/alerts/:alertId" element={<S><AlertDetailPage /></S>} />
         <Route path="/resources" element={<S><ResourcesPage /></S>} />
+        <Route path="/casas" element={<S><CasasPage /></S>} />
+        <Route path="/casas/:resourceId" element={<S><ResourceDetailPage /></S>} />
         <Route
           path="/resources/new"
           element={
@@ -238,7 +246,6 @@ export function AppRouter() {
         />
         <Route path="/resources/:resourceId" element={<S><ResourceDetailPage /></S>} />
         <Route path="/chat" element={<S><ChatPage /></S>} />
-        <Route path="/chat/:conversationId" element={<S><ChatPage /></S>} />
         <Route path="/notifications" element={<S><NotificationsPage /></S>} />
         <Route path="/bookmarks" element={<S><BookmarksPage /></S>} />
         <Route path="/members" element={<S><MembersPage /></S>} />
@@ -268,7 +275,9 @@ export function AppRouter() {
           <Route index element={<S><AdminDashboardPage /></S>} />
           <Route path="users" element={<S><AdminUsersPage /></S>} />
           <Route path="cities" element={<S><AdminCitiesPage /></S>} />
-          <Route path="resources" element={<S><AdminResourcesPage /></S>} />
+          <Route path="casas" element={<S><AdminCasasPage /></S>} />
+          <Route path="casas/new" element={<S><AdminCasaFormPage /></S>} />
+          <Route path="casas/:casaId/edit" element={<S><AdminCasaFormPage /></S>} />
         </Route>
         <Route path="/profile/edit" element={<S><EditProfilePage /></S>} />
         <Route path="/profile/:alias" element={<S><ProfilePage /></S>} />

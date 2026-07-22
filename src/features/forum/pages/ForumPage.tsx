@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ErrorState } from '@/components/shared/ErrorState'
-import { useSearch } from '@/components/layout/AppShell'
 import { CategorySidebar } from '@/features/forum/components/CategorySidebar'
 import { PostCard } from '@/features/forum/components/PostCard'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -17,8 +16,7 @@ import { MessageSquare } from 'lucide-react'
 
 export function ForumPage() {
   const { user } = useAuth()
-  const { selectedCity, selectedCityId } = useCity()
-  const { search } = useSearch()
+  const { selectedCityId } = useCity()
   const [category, setCategory] = useState<PostCategory | 'all'>('all')
 
   const { data: counts = {} } = useQuery({
@@ -33,12 +31,11 @@ export function ForumPage() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['posts', selectedCityId, category, search],
+    queryKey: ['posts', selectedCityId, category],
     queryFn: async () => {
       const raw = await postService.getPosts({
         cityId: selectedCityId!,
         category: category === 'all' ? undefined : category,
-        search: search || undefined,
       })
       return user ? postService.enrichWithLikes(raw, user.id) : raw
     },
@@ -51,8 +48,7 @@ export function ForumPage() {
         <div>
           <h1 className="text-2xl font-bold">Foro comunitario</h1>
           <p className="text-muted-foreground">
-            Comparte experiencias, consejos y aprende junto a otras profesionales
-            {selectedCity ? ` en ${selectedCity.name}` : ''}.
+            Comparte experiencias, consejos y aprende junto a otras profesionales.
           </p>
         </div>
         <Link to="/forum/new">

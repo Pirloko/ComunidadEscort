@@ -103,8 +103,16 @@ export const resourceCommentSchema = z.object({
 export type ResourceCommentFormData = z.infer<typeof resourceCommentSchema>
 
 export const resourceReviewSchema = z.object({
-  rating: z.number().int().min(1, 'Elige una puntuación').max(5),
+  rating: z.number().int().min(0, 'Elige una puntuación').max(5),
   body: z.string().max(1000, 'Máximo 1000 caracteres').optional().or(z.literal('')),
+  service_notes: z
+    .string()
+    .min(1, 'Cuéntanos cómo fue el servicio')
+    .max(1000, 'Máximo 1000 caracteres'),
+  owner_notes: z
+    .string()
+    .min(1, 'Cuéntanos cómo fue el trato con la dueña')
+    .max(1000, 'Máximo 1000 caracteres'),
 })
 
 export type ResourceReviewFormData = z.infer<typeof resourceReviewSchema>

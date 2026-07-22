@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, MapPin, Building2 } from 'lucide-react'
+import { LayoutDashboard, Users, MapPin, Home } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { adminService } from '@/services/admin.service'
@@ -8,16 +8,10 @@ const TABS = [
   { to: '/admin', label: 'Resumen', icon: LayoutDashboard, end: true },
   { to: '/admin/users', label: 'Usuarios', icon: Users },
   { to: '/admin/cities', label: 'Ciudades', icon: MapPin },
-  { to: '/admin/resources', label: 'Datos de todo', icon: Building2 },
+  { to: '/admin/casas', label: 'Casas', icon: Home },
 ]
 
 export function AdminLayout() {
-  const { data: unverifiedCount = 0 } = useQuery({
-    queryKey: ['admin-unverified-count'],
-    queryFn: () => adminService.getUnverifiedResourcesCount(),
-    refetchInterval: 60000,
-  })
-
   const { data: pendingUsersCount = 0 } = useQuery({
     queryKey: ['admin-pending-users-count'],
     queryFn: () => adminService.getPendingUsersCount(),
@@ -29,7 +23,7 @@ export function AdminLayout() {
       <div>
         <h1 className="text-2xl font-bold">Panel de administración</h1>
         <p className="text-muted-foreground">
-          Gestiona usuarios, ciudades y verificación de Datos de todo.
+          Gestiona usuarios, ciudades y casas/habitaciones para escort.
         </p>
       </div>
 
@@ -53,11 +47,6 @@ export function AdminLayout() {
             {to === '/admin/users' && pendingUsersCount > 0 && (
               <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {pendingUsersCount > 9 ? '9+' : pendingUsersCount}
-              </span>
-            )}
-            {to === '/admin/resources' && unverifiedCount > 0 && (
-              <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-white">
-                {unverifiedCount > 9 ? '9+' : unverifiedCount}
               </span>
             )}
           </NavLink>

@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import {
@@ -24,8 +24,10 @@ import { HabitacionAttrsList } from '@/features/home/components/HabitacionAttrsL
 import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
 import { StarRating } from '@/components/shared/StarRating'
+import { ShareWhatsAppButton } from '@/components/shared/ShareWhatsAppButton'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime } from '@/lib/format'
+import { shareCasaPageText } from '@/lib/share'
 import { primaryContactPhone, whatsappUrl } from '@/lib/habitaciones'
 import { resourceService } from '@/services/resource.service'
 import { resourceCommentService } from '@/services/resource-comment.service'
@@ -34,8 +36,10 @@ import { resourceReviewService } from '@/services/resource-review.service'
 export function ResourceDetailPage() {
   const { resourceId } = useParams<{ resourceId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, profile } = useAuth()
   const [photoIdx, setPhotoIdx] = useState(0)
+  const fromCasas = location.pathname.startsWith('/casas')
 
   const { data: resource, isLoading, isError, refetch } = useQuery({
     queryKey: ['resource', resourceId],
@@ -99,11 +103,11 @@ export function ResourceDetailPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Link
-        to="/resources"
+        to={fromCasas ? '/casas' : '/resources'}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Volver a Datos de todo
+        {fromCasas ? 'Volver a Casas y habitaciones' : 'Volver a Datos de todo'}
       </Link>
 
       <Card className="overflow-hidden">
@@ -170,7 +174,21 @@ export function ResourceDetailPage() {
                 <span>Agregado {formatRelativeTime(resource.created_at)}</span>
               </div>
             </div>
-            <BookmarkButton itemType="resource" itemId={resource.id} size="sm" />
+            <div className="flex shrink-0 items-center gap-0.5">
+              {isHabitacion && (
+                <ShareWhatsAppButton
+                  size="sm"
+                  variant="ghost"
+                  label="Compartir con alguna amiga"
+                  className="h-8 px-2 text-[11px]"
+                  text={shareCasaPageText({
+                    houseName: resource.name,
+                    path: fromCasas ? `/casas/${resource.id}` : `/resources/${resource.id}`,
+                  })}
+                />
+              )}
+              <BookmarkButton itemType="resource" itemId={resource.id} size="sm" />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -337,9 +355,18 @@ export function ResourceDetailPage() {
       <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold">Reseñas</h2>
+          <p className="text-xs text-muted-foreground">
+            Solo visibles para miembros con sesión iniciada.
+          </p>
         </CardHeader>
         <CardContent>
-          <ResourceReviewSection resourceId={resource.id} reviews={reviews} />
+          <ResourceReviewSection
+            resourceId={resource.id}
+            resourceName={resource.name}
+            reviews={user ? reviews : []}
+            enriched={isHabitacion}
+            sharePath={fromCasas ? `/casas/${resource.id}` : `/resources/${resource.id}`}
+          />
         </CardContent>
       </Card>
 

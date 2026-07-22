@@ -52,7 +52,7 @@ export function UserMenu() {
             onClick={() => setOpen(false)}
           >
             <MessageCircle className="h-4 w-4" />
-            Mensajes
+            Chat
           </Link>
           <Link
             to="/settings"

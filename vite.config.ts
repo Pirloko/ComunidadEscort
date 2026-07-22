@@ -10,24 +10,30 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'logo-comunidad.png', 'logo-comunidad-light.png', 'logo-icon.png'],
       manifest: {
         name: 'Comunidadescort.cl',
         short_name: 'Comunidad',
         description:
           'Comunidad privada para seguridad, apoyo mutuo y bienestar en Chile',
-        theme_color: '#1e3a5f',
-        background_color: '#ffffff',
+        theme_color: '#0a0a0c',
+        background_color: '#0a0a0c',
         display: 'standalone',
         lang: 'es',
         start_url: '/',
         scope: '/',
         icons: [
           {
-            src: '/favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable',
+            src: '/logo-icon.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/logo-icon.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
           },
         ],
       },

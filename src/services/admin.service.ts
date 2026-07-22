@@ -10,8 +10,8 @@ export const adminService = {
       moderators,
       totalCities,
       activeCities,
-      unverifiedResources,
-      totalResources,
+      totalHabitaciones,
+      activeHabitaciones,
       pendingAlerts,
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
@@ -29,9 +29,14 @@ export const adminService = {
       supabase
         .from('resources')
         .select('*', { count: 'exact', head: true })
-        .eq('is_verified', false)
+        .eq('category', 'habitaciones_escort')
+        .eq('status', 'aprobada'),
+      supabase
+        .from('resources')
+        .select('*', { count: 'exact', head: true })
+        .eq('category', 'habitaciones_escort')
+        .eq('status', 'aprobada')
         .eq('is_active', true),
-      supabase.from('resources').select('*', { count: 'exact', head: true }),
       supabase
         .from('alerts')
         .select('*', { count: 'exact', head: true })
@@ -45,8 +50,8 @@ export const adminService = {
       moderators.error,
       totalCities.error,
       activeCities.error,
-      unverifiedResources.error,
-      totalResources.error,
+      totalHabitaciones.error,
+      activeHabitaciones.error,
       pendingAlerts.error,
     ].filter(Boolean)
 
@@ -59,8 +64,8 @@ export const adminService = {
       moderators: moderators.count ?? 0,
       totalCities: totalCities.count ?? 0,
       activeCities: activeCities.count ?? 0,
-      unverifiedResources: unverifiedResources.count ?? 0,
-      totalResources: totalResources.count ?? 0,
+      totalHabitaciones: totalHabitaciones.count ?? 0,
+      activeHabitaciones: activeHabitaciones.count ?? 0,
       pendingAlerts: pendingAlerts.count ?? 0,
     }
   },
@@ -70,17 +75,6 @@ export const adminService = {
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('account_status', 'pendiente')
-
-    if (error) throw error
-    return count ?? 0
-  },
-
-  async getUnverifiedResourcesCount(): Promise<number> {
-    const { count, error } = await supabase
-      .from('resources')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_verified', false)
-      .eq('is_active', true)
 
     if (error) throw error
     return count ?? 0

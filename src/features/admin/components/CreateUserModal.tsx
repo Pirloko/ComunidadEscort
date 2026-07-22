@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, Copy, Loader2, UserPlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,6 @@ import {
   adminCreateUserSchema,
   type AdminCreateUserFormData,
 } from '@/features/admin/schemas/admin-create-user.schema'
-import { cityService } from '@/services/city.service'
 import { profileService } from '@/services/profile.service'
 import { normalizePhoneChile } from '@/lib/phone'
 import type { CreateUserAsAdminResult } from '@/types/admin'
@@ -23,11 +22,6 @@ export function CreateUserModal({ onClose }: CreateUserModalProps) {
   const queryClient = useQueryClient()
   const [credentials, setCredentials] = useState<CreateUserAsAdminResult | null>(null)
   const [copied, setCopied] = useState(false)
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['public-cities'],
-    queryFn: () => cityService.getPublicCities(),
-  })
 
   const {
     register,
@@ -46,7 +40,6 @@ export function CreateUserModal({ onClose }: CreateUserModalProps) {
         email: data.email,
         phone: normalizePhoneChile(data.phone),
         publication_link: data.publication_link,
-        city_id: data.city_id || undefined,
       }),
     onSuccess: (result) => {
       setCredentials(result)
@@ -152,22 +145,6 @@ export function CreateUserModal({ onClose }: CreateUserModalProps) {
                 {errors.publication_link && (
                   <p className="text-sm text-destructive">{errors.publication_link.message}</p>
                 )}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="city_id">Ciudad (opcional)</Label>
-                <select
-                  id="city_id"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  {...register('city_id')}
-                >
-                  <option value="">Sin asignar</option>
-                  {cities.map((city) => (
-                    <option key={city.id} value={city.id}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <p className="text-xs text-muted-foreground">

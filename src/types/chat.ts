@@ -1,22 +1,24 @@
+export type CommunityMessageKind = 'text' | 'gif' | 'sticker'
+
 export interface ChatParticipant {
   id: string
   alias: string
   avatar_url: string | null
 }
 
-export interface Message {
+export interface CommunityMessage {
   id: string
-  conversation_id: string
   sender_id: string
   content: string
+  kind: CommunityMessageKind
+  media_url: string | null
   created_at: string
   sender?: ChatParticipant
 }
 
-export interface ConversationPreview {
-  id: string
-  updated_at: string
-  other_user: ChatParticipant
-  last_message: Message | null
-  unread_count: number
+export interface SendCommunityMessageInput {
+  senderId: string
+  kind: CommunityMessageKind
+  content?: string
+  mediaUrl?: string | null
 }

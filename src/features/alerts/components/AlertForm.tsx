@@ -40,6 +40,7 @@ export function AlertForm({ cityId, authorId, onSuccess }: AlertFormProps) {
         title: data.title,
         description: data.description,
         location_detail: data.location_detail || undefined,
+        report_kind: 'funar',
       })
       onSuccess(alert)
     } catch (err) {

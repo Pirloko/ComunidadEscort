@@ -9,8 +9,8 @@ export interface AdminStats {
   moderators: number
   totalCities: number
   activeCities: number
-  unverifiedResources: number
-  totalResources: number
+  totalHabitaciones: number
+  activeHabitaciones: number
   pendingAlerts: number
 }
 

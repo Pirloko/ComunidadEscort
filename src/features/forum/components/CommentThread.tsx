@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ReportButton } from '@/features/reports/components/ReportButton'
 import { commentSchema, type CommentFormData } from '@/features/forum/schemas/forum.schema'
 import { formatRelativeTime } from '@/lib/format'
+import { displayAuthorAlias } from '@/lib/display-alias'
 import { commentService } from '@/services/comment.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import type { Comment } from '@/types/forum'
@@ -46,7 +47,11 @@ function CommentItem({
       <div className="flex gap-3">
         {comment.author && (
           <Link to={`/profile/${comment.author.alias}`}>
-            <Avatar src={comment.author.avatar_url} alias={comment.author.alias} size="sm" />
+            <Avatar
+              src={comment.author.avatar_url}
+              alias={displayAuthorAlias(comment.author.alias)}
+              size="sm"
+            />
           </Link>
         )}
         <div className="min-w-0 flex-1">
@@ -56,7 +61,7 @@ function CommentItem({
                 to={`/profile/${comment.author.alias}`}
                 className="text-sm font-semibold hover:text-accent"
               >
-                @{comment.author.alias}
+                @{displayAuthorAlias(comment.author.alias)}
               </Link>
             ) : (
               <span className="text-sm font-semibold">@—</span>

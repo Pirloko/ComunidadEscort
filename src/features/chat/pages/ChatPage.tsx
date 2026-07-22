@@ -1,98 +1,117 @@
-import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { MessageCircle } from 'lucide-react'
-import { ConversationListItem } from '@/features/chat/components/ConversationListItem'
-import { ChatWindow } from '@/features/chat/components/ChatWindow'
-import { EmptyState } from '@/components/shared/EmptyState'
+import { useEffect, useRef } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { MessageCircle, Users } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { ErrorState } from '@/components/shared/ErrorState'
+import { MessageBubble } from '@/features/chat/components/MessageBubble'
+import { ChatComposer } from '@/features/chat/components/ChatComposer'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { chatService } from '@/services/chat.service'
-import { cn } from '@/lib/utils'
+import type { CommunityMessage, CommunityMessageKind } from '@/types/chat'
 
 export function ChatPage() {
-  const { conversationId } = useParams<{ conversationId?: string }>()
-  const navigate = useNavigate()
   const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-  const { data: conversations = [], isLoading } = useQuery({
-    queryKey: ['conversations', user?.id],
-    queryFn: () => chatService.getConversations(user!.id),
-    enabled: !!user?.id,
-    refetchInterval: 30000,
+  const {
+    data: messages = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ['community-messages'],
+    queryFn: () => chatService.getCommunityMessages(),
   })
 
-  const activeConversation = conversations.find((c) => c.id === conversationId)
+  useEffect(() => {
+    const unsubscribe = chatService.subscribeToCommunityMessages((message) => {
+      queryClient.setQueryData(['community-messages'], (old: CommunityMessage[] | undefined) => {
+        if (!old) return [message]
+        if (old.some((m) => m.id === message.id)) return old
+        return [...old, message]
+      })
+    })
+    return unsubscribe
+  }, [queryClient])
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const sendMutation = useMutation({
+    mutationFn: (input: {
+      kind: CommunityMessageKind
+      content: string
+      mediaUrl?: string | null
+    }) =>
+      chatService.sendCommunityMessage({
+        senderId: user!.id,
+        kind: input.kind,
+        content: input.content,
+        mediaUrl: input.mediaUrl,
+      }),
+    onSuccess: (message) => {
+      queryClient.setQueryData(['community-messages'], (old: CommunityMessage[] | undefined) => {
+        if (!old) return [message]
+        if (old.some((m) => m.id === message.id)) return old
+        return [...old, message]
+      })
+    },
+  })
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto flex max-w-2xl flex-col space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">Mensajes</h1>
-        <p className="text-muted-foreground">Conversaciones privadas con miembros de la comunidad.</p>
+        <h1 className="flex items-center gap-2 text-2xl font-bold">
+          <MessageCircle className="h-6 w-6 text-primary" />
+          Chat de la comunidad
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Sala única para todas las miembros. Envía texto, emoticones, stickers o GIFs.
+        </p>
       </div>
 
-      <div className="flex h-[calc(100vh-12rem)] overflow-hidden rounded-xl border bg-card lg:h-[calc(100vh-10rem)]">
-        <aside
-          className={cn(
-            'w-full shrink-0 border-r lg:w-80',
-            conversationId ? 'hidden lg:block' : 'block',
-          )}
-        >
-          <div className="overflow-y-auto p-2">
-            {isLoading && (
-              <div className="space-y-2 p-2">
-                <Skeleton className="h-16 w-full rounded-lg" />
-                <Skeleton className="h-16 w-full rounded-lg" />
-              </div>
-            )}
+      <div className="flex h-[calc(100vh-12rem)] flex-col overflow-hidden rounded-xl border bg-card lg:h-[calc(100vh-10rem)]">
+        <div className="flex items-center gap-2 border-b px-4 py-3 text-sm text-muted-foreground">
+          <Users className="h-4 w-4 shrink-0" />
+          Todas las miembros pueden leer y escribir aquí
+        </div>
 
-            {!isLoading && conversations.length === 0 && (
-              <div className="p-4">
-                <EmptyState
-                  icon={MessageCircle}
-                  title="Sin conversaciones"
-                  description="Visita el perfil de otra miembro para enviarle un mensaje."
-                />
-              </div>
-            )}
-
-            {conversations.map((conv) => (
-              <ConversationListItem
-                key={conv.id}
-                conversation={conv}
-                isActive={conv.id === conversationId}
-                onClick={() => navigate(`/chat/${conv.id}`)}
-              />
-            ))}
-          </div>
-        </aside>
-
-        <main
-          className={cn(
-            'min-w-0 flex-1',
-            !conversationId ? 'hidden lg:flex lg:items-center lg:justify-center' : 'flex flex-col',
-          )}
-        >
-          {!conversationId && (
-            <div className="hidden text-center text-muted-foreground lg:block">
-              <MessageCircle className="mx-auto h-12 w-12 opacity-30" />
-              <p className="mt-3">Selecciona una conversación</p>
-            </div>
+        <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          {isLoading && (
+            <>
+              <Skeleton className="h-12 w-48 rounded-2xl" />
+              <Skeleton className="ml-auto h-12 w-52 rounded-2xl" />
+              <Skeleton className="h-12 w-40 rounded-2xl" />
+            </>
           )}
 
-          {conversationId && activeConversation && (
-            <ChatWindow
-              conversationId={conversationId}
-              otherUser={activeConversation.other_user}
-              onBack={() => navigate('/chat')}
+          {isError && <ErrorState onRetry={() => void refetch()} />}
+
+          {!isLoading && !isError && messages.length === 0 && (
+            <EmptyState
+              icon={MessageCircle}
+              title="Aún no hay mensajes"
+              description="Sé la primera en saludar a la comunidad."
             />
           )}
 
-          {conversationId && !activeConversation && !isLoading && (
-            <div className="flex flex-1 items-center justify-center text-muted-foreground">
-              Conversación no encontrada
-            </div>
-          )}
-        </main>
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} message={msg} isOwn={msg.sender_id === user?.id} />
+          ))}
+          <div ref={bottomRef} />
+        </div>
+
+        <ChatComposer
+          disabled={!user}
+          sending={sendMutation.isPending}
+          onSendText={(text) => sendMutation.mutate({ kind: 'text', content: text })}
+          onSendMedia={({ kind, content, mediaUrl }) =>
+            sendMutation.mutate({ kind, content, mediaUrl })
+          }
+        />
       </div>
     </div>
   )

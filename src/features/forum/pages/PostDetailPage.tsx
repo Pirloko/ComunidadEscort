@@ -1,6 +1,6 @@
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, MapPin, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { Avatar } from '@/components/shared/Avatar'
 import { CategoryBadge } from '@/components/shared/CategoryBadge'
 import { ErrorState } from '@/components/shared/ErrorState'
@@ -13,6 +13,7 @@ import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
 import { ReportButton } from '@/features/reports/components/ReportButton'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime } from '@/lib/format'
+import { displayAuthorAlias } from '@/lib/display-alias'
 import { postService } from '@/services/post.service'
 import { commentService } from '@/services/comment.service'
 
@@ -76,27 +77,24 @@ export function PostDetailPage() {
             <div className="flex items-start gap-3">
               {post.author && (
                 <Link to={`/profile/${post.author.alias}`}>
-                  <Avatar src={post.author.avatar_url} alias={post.author.alias} size="lg" />
+                  <Avatar
+                    src={post.author.avatar_url}
+                    alias={displayAuthorAlias(post.author.alias)}
+                    size="lg"
+                  />
                 </Link>
               )}
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   {post.author && (
                     <Link to={`/profile/${post.author.alias}`} className="font-semibold hover:text-accent">
-                      @{post.author.alias}
+                      @{displayAuthorAlias(post.author.alias)}
                     </Link>
                   )}
                   <CategoryBadge category={post.category} />
                 </div>
-                <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                  {post.city && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {post.city.name}
-                    </span>
-                  )}
-                  <span>·</span>
-                  <span>{formatRelativeTime(post.created_at)}</span>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {formatRelativeTime(post.created_at)}
                 </div>
               </div>
             </div>

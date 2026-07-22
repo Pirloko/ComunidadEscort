@@ -14,7 +14,14 @@ export type AlertCategory =
   | 'robo'
   | 'incidente_seguridad'
   | 'advertencia'
+  | 'acoso'
+  | 'violencia'
+  | 'no_pago'
+  | 'cliente_peligroso'
+  | 'recomendacion'
   | 'otro'
+
+export type AlertReportKind = 'funar' | 'recomendar'
 
 export type AlertStatus = 'pendiente' | 'aprobada' | 'rechazada'
 

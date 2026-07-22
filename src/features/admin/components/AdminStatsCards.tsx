@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, MapPin, Building2, ShieldAlert, UserCheck, Clock } from 'lucide-react'
+import { Users, MapPin, Home, ShieldAlert, UserCheck, Clock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import type { AdminStats } from '@/types/admin'
 
@@ -42,18 +42,13 @@ const CARDS = [
     href: '/admin/cities',
   },
   {
-    key: 'unverifiedResources' as const,
-    label: 'Datos sin verificar',
-    icon: Building2,
-    color: 'text-destructive',
-    href: '/admin/resources',
-  },
-  {
-    key: 'totalResources' as const,
-    label: 'Datos totales',
-    icon: Building2,
-    color: 'text-muted-foreground',
-    href: '/admin/resources',
+    key: 'totalHabitaciones' as const,
+    label: 'Casas / habitaciones',
+    sub: 'activeHabitaciones',
+    subLabel: 'activas',
+    icon: Home,
+    color: 'text-primary',
+    href: '/admin/casas',
   },
   {
     key: 'pendingAlerts' as const,
@@ -75,9 +70,7 @@ export function AdminStatsCards({ stats, isLoading }: AdminStatsCardsProps) {
                 <Icon className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold">
-                  {isLoading ? '…' : stats[key]}
-                </p>
+                <p className="text-2xl font-bold">{isLoading ? '…' : stats[key]}</p>
                 <p className="text-sm text-muted-foreground">{label}</p>
                 {sub && !isLoading && (
                   <p className="text-xs text-muted-foreground">

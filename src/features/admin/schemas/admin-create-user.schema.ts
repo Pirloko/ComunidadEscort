@@ -24,7 +24,6 @@ export const adminCreateUserSchema = z.object({
     .trim()
     .min(10, 'Ingresa el enlace completo de la publicación')
     .url('Ingresa un enlace válido (debe comenzar con http:// o https://)'),
-  city_id: z.string().optional(),
 })
 
 export type AdminCreateUserFormData = z.infer<typeof adminCreateUserSchema>

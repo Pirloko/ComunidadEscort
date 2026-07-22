@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MessageCircle, MapPin, Pin } from 'lucide-react'
+import { MessageCircle, Pin } from 'lucide-react'
 import { Avatar } from '@/components/shared/Avatar'
 import { CategoryBadge } from '@/components/shared/CategoryBadge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -8,6 +8,7 @@ import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
 import { ReportButton } from '@/features/reports/components/ReportButton'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { formatRelativeTime, truncateText } from '@/lib/format'
+import { displayAuthorAlias } from '@/lib/display-alias'
 import type { Post } from '@/types/forum'
 
 interface PostCardProps {
@@ -18,6 +19,7 @@ interface PostCardProps {
 export function PostCard({ post, compact = false }: PostCardProps) {
   const { user } = useAuth()
   const author = post.author
+  const handle = author ? displayAuthorAlias(author.alias) : null
 
   return (
     <Card className="transition-shadow hover:shadow-md">
@@ -25,17 +27,17 @@ export function PostCard({ post, compact = false }: PostCardProps) {
         <div className="flex items-start gap-3">
           {author && (
             <Link to={`/profile/${author.alias}`}>
-              <Avatar src={author.avatar_url} alias={author.alias} size="md" />
+              <Avatar src={author.avatar_url} alias={handle ?? author.alias} size="md" />
             </Link>
           )}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              {author && (
+              {author && handle && (
                 <Link
                   to={`/profile/${author.alias}`}
                   className="text-sm font-semibold hover:text-accent"
                 >
-                  @{author.alias}
+                  @{handle}
                 </Link>
               )}
               <CategoryBadge category={post.category} />
@@ -45,23 +47,16 @@ export function PostCard({ post, compact = false }: PostCardProps) {
                 </span>
               )}
             </div>
-            <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-              {post.city && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {post.city.name}
-                </span>
-              )}
-              <span>·</span>
-              <span>{formatRelativeTime(post.created_at)}</span>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              {formatRelativeTime(post.created_at)}
             </div>
 
-            <Link to={`/forum/${post.id}`} className="block mt-3 group">
-              <h3 className="font-semibold leading-snug group-hover:text-accent transition-colors">
+            <Link to={`/forum/${post.id}`} className="mt-3 block group">
+              <h3 className="font-semibold leading-snug transition-colors group-hover:text-accent">
                 {post.title}
               </h3>
               {!compact && (
-                <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">
+                <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
                   {truncateText(post.content, 180)}
                 </p>
               )}

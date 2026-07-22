@@ -1,35 +1,32 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Plus, Filter, ShieldAlert } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Filter, ShieldAlert, MapPin, Phone } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ErrorState } from '@/components/shared/ErrorState'
 import { AlertCard } from '@/features/alerts/components/AlertCard'
-import { useSearch } from '@/components/layout/AppShell'
 import { useCity } from '@/features/cities/context/CityContext'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { alertService } from '@/services/alert.service'
-import { ALERT_CATEGORIES } from '@/lib/alerts'
-import type { AlertCategory } from '@/types/database'
 
 export function AlertsPage() {
-  const navigate = useNavigate()
   const { profile } = useAuth()
-  const { selectedCity, selectedCityId } = useCity()
-  const { search } = useSearch()
-  const [category, setCategory] = useState<AlertCategory | 'all'>('all')
+  const { cities } = useCity()
+  const [filterCityId, setFilterCityId] = useState<string>('all')
+  const [clientPhone, setClientPhone] = useState('')
+
+  const phoneDigits = clientPhone.replace(/[^\d]/g, '')
+  const phoneSearchActive = phoneDigits.length >= 4
 
   const { data: alerts = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ['alerts', selectedCityId, category, search],
+    queryKey: ['alerts', filterCityId, phoneDigits],
     queryFn: () =>
       alertService.getApprovedAlerts({
-        cityId: selectedCityId!,
-        category: category === 'all' ? undefined : category,
-        search: search || undefined,
+        cityId: filterCityId === 'all' ? undefined : filterCityId,
+        clientPhone: phoneSearchActive ? phoneDigits : undefined,
       }),
-    enabled: !!selectedCityId,
   })
 
   const { data: myPending = [] } = useQuery({
@@ -39,22 +36,21 @@ export function AlertsPage() {
     select: (data) => data.filter((a) => a.status === 'pendiente'),
   })
 
-  const categories = ALERT_CATEGORIES
+  const phoneStats = useMemo(() => {
+    if (!phoneSearchActive) return null
+    const funas = alerts.filter((a) => a.report_kind !== 'recomendar').length
+    const recoms = alerts.filter((a) => a.report_kind === 'recomendar').length
+    return { total: alerts.length, funas, recoms }
+  }, [alerts, phoneSearchActive])
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Centro de alertas</h1>
-          <p className="text-muted-foreground">
-            Mantente al día con las alertas verificadas
-            {selectedCity ? ` en ${selectedCity.name}` : ''}.
-          </p>
-        </div>
-        <Button variant="destructive" className="gap-2" onClick={() => navigate('/alerts/new')}>
-          <Plus className="h-4 w-4" />
-          Reportar alerta
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold">Reportes de clientes</h1>
+        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+          Consulta funas y recomendaciones verificadas. Busca por celular para ver cuántos
+          reportes tiene un cliente antes de atenderlo.
+        </p>
       </div>
 
       {myPending.length > 0 && (
@@ -68,25 +64,65 @@ export function AlertsPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
+      <div className="flex flex-col gap-3 rounded-xl border bg-card p-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Filter className="h-4 w-4" />
           Filtros
         </div>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value as AlertCategory | 'all')}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-        >
-          {categories.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <span className="ml-auto text-sm text-muted-foreground">
-          {alerts.length} resultado{alerts.length !== 1 ? 's' : ''}
-        </span>
+
+        <label className="relative block">
+          <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={clientPhone}
+            onChange={(e) => setClientPhone(e.target.value)}
+            placeholder="Buscar por número de celular…"
+            inputMode="tel"
+            autoComplete="tel"
+            className="pl-9"
+            aria-label="Buscar por número de celular del cliente"
+          />
+        </label>
+        {clientPhone && phoneDigits.length > 0 && phoneDigits.length < 4 && (
+          <p className="text-xs text-muted-foreground">Escribe al menos 4 dígitos para buscar.</p>
+        )}
+
+        <label className="flex min-w-0 items-center gap-2">
+          <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <select
+            value={filterCityId}
+            onChange={(e) => setFilterCityId(e.target.value)}
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            aria-label="Filtrar por ciudad"
+          >
+            <option value="all">Todas las ciudades</option>
+            {cities.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {phoneStats ? (
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{phoneStats.total}</span> reporte
+            {phoneStats.total !== 1 ? 's' : ''} para este número
+            {phoneStats.total > 0 && (
+              <>
+                {' '}
+                (
+                {phoneStats.funas} funa{phoneStats.funas !== 1 ? 's' : ''}
+                {', '}
+                {phoneStats.recoms} recomendación
+                {phoneStats.recoms !== 1 ? 'es' : ''})
+              </>
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {alerts.length} resultado{alerts.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
       {isLoading && (
@@ -96,17 +132,18 @@ export function AlertsPage() {
         </div>
       )}
 
-      {isError && <ErrorState onRetry={() => refetch()} />}
+      {isError && <ErrorState onRetry={() => void refetch()} />}
 
       {!isLoading && !isError && alerts.length === 0 && (
         <EmptyState
           icon={ShieldAlert}
-          title="Sin alertas aprobadas"
-          description="No hay alertas verificadas en esta ciudad. Puedes reportar una situación."
-          action={
-            <Button variant="destructive" onClick={() => navigate('/alerts/new')}>
-              Reportar alerta
-            </Button>
+          title={phoneSearchActive ? 'Sin reportes para ese número' : 'Sin reportes aprobados'}
+          description={
+            phoneSearchActive
+              ? 'No hay funas ni recomendaciones verificadas con ese celular.'
+              : filterCityId === 'all'
+                ? 'No hay funas ni recomendaciones verificadas todavía.'
+                : 'No hay reportes verificados en esta ciudad. Prueba “Todas las ciudades”.'
           }
         />
       )}

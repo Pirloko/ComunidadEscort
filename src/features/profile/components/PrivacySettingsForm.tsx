@@ -20,7 +20,9 @@ export function PrivacySettingsForm({ profile, onSuccess }: PrivacySettingsFormP
 
   const { handleSubmit, watch, setValue, formState: { isSubmitting } } = useForm<PrivacySettingsFormData>({
     resolver: zodResolver(privacySettingsSchema),
-    defaultValues: profile.privacy_settings,
+    defaultValues: {
+      show_description: profile.privacy_settings.show_description,
+    },
   })
 
   const values = watch()
@@ -30,7 +32,12 @@ export function PrivacySettingsForm({ profile, onSuccess }: PrivacySettingsFormP
     setSuccess(false)
     try {
       const updated = await profileService.updateProfile(profile.id, {
-        privacy_settings: data,
+        privacy_settings: {
+          ...profile.privacy_settings,
+          ...data,
+          show_city: false,
+          allow_messages: false,
+        },
       })
       onSuccess(updated)
       setSuccess(true)
@@ -52,18 +59,6 @@ export function PrivacySettingsForm({ profile, onSuccess }: PrivacySettingsFormP
 
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Label htmlFor="show_city">Mostrar ciudad</Label>
-          <p className="text-sm text-muted-foreground">Otros miembros verán tu ciudad en tu perfil.</p>
-        </div>
-        <Switch
-          id="show_city"
-          checked={values.show_city}
-          onCheckedChange={(v) => setValue('show_city', v, { shouldDirty: true })}
-        />
-      </div>
-
-      <div className="flex items-center justify-between gap-4">
-        <div>
           <Label htmlFor="show_description">Mostrar descripción</Label>
           <p className="text-sm text-muted-foreground">Tu descripción será visible en tu perfil público.</p>
         </div>
@@ -71,18 +66,6 @@ export function PrivacySettingsForm({ profile, onSuccess }: PrivacySettingsFormP
           id="show_description"
           checked={values.show_description}
           onCheckedChange={(v) => setValue('show_description', v, { shouldDirty: true })}
-        />
-      </div>
-
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <Label htmlFor="allow_messages">Permitir mensajes</Label>
-          <p className="text-sm text-muted-foreground">Otros miembros podrán enviarte mensajes privados.</p>
-        </div>
-        <Switch
-          id="allow_messages"
-          checked={values.allow_messages}
-          onCheckedChange={(v) => setValue('allow_messages', v, { shouldDirty: true })}
         />
       </div>
 

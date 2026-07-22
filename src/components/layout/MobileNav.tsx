@@ -36,11 +36,11 @@ export function MobileNav() {
     refetchInterval: 60000,
   })
 
-  const { data: unverifiedCount = 0 } = useQuery({
-    queryKey: ['admin-unverified-count'],
-    queryFn: () => adminService.getUnverifiedResourcesCount(),
+  const { data: pendingUsersCount = 0 } = useQuery({
+    queryKey: ['admin-pending-users-count'],
+    queryFn: () => adminService.getPendingUsersCount(),
     enabled: isAdmin,
-    refetchInterval: 60000,
+    refetchInterval: 30000,
   })
 
   let items: NavItem[] = ITEMS
@@ -48,7 +48,7 @@ export function MobileNav() {
   if (isAdmin) {
     items = [
       ...ITEMS.slice(0, 3),
-      { to: '/admin', icon: Settings2, label: 'Admin', badge: unverifiedCount },
+      { to: '/admin', icon: Settings2, label: 'Admin', badge: pendingUsersCount },
       ...ITEMS.slice(3),
     ]
   } else if (isModerator) {
@@ -60,7 +60,7 @@ export function MobileNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex border-t bg-card lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex border-t bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">
       {items.map(({ to, icon: Icon, label, dynamic, badge }) => {
         const href = dynamic && profile ? `/profile/${profile.alias}` : to
         const active =

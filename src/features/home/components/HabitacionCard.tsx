@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
-import { MapPin, MessageCircle, Wifi, Users } from 'lucide-react'
+import { MapPin, MessageCircle, Wifi, Users, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { whatsappUrl, primaryContactPhone } from '@/lib/habitaciones'
 import type { Resource } from '@/types/resources'
 
@@ -19,14 +18,14 @@ export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
   )
 
   return (
-    <Card className="overflow-hidden transition-shadow hover:shadow-md">
-      <Link to={detailTo} className="block">
-        <div className="aspect-[4/3] bg-muted">
+    <article className="home-card-lift group overflow-hidden rounded-xl border border-white/8 bg-card/80">
+      <Link to={detailTo} className="block overflow-hidden">
+        <div className="relative aspect-[4/3] bg-muted">
           {photo ? (
             <img
               src={photo}
               alt={habitacion.name}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               loading="lazy"
             />
           ) : (
@@ -34,44 +33,52 @@ export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
               Sin foto
             </div>
           )}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-80" />
+          {habitacion.city && (
+            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+              <MapPin className="h-3 w-3" />
+              {habitacion.city.name}
+            </span>
+          )}
         </div>
       </Link>
-      <CardContent className="space-y-3 p-4">
+
+      <div className="space-y-3 p-4">
         <div>
-          <Link to={detailTo} className="font-semibold hover:text-accent">
+          <Link
+            to={detailTo}
+            className="font-semibold text-foreground transition-colors hover:text-primary"
+          >
             {habitacion.name}
           </Link>
-          {habitacion.city && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5" />
-              {habitacion.city.name}
-            </p>
-          )}
         </div>
 
         <div className="flex flex-wrap gap-1.5">
           {habitacion.tiene_wifi && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+            <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-muted/60 px-2 py-0.5 text-[10px] font-medium">
               <Wifi className="h-3 w-3" /> Wifi
             </span>
           )}
           {habitacion.acepta_parejas && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+            <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-muted/60 px-2 py-0.5 text-[10px] font-medium">
               <Users className="h-3 w-3" /> Parejas
             </span>
           )}
           {habitacion.pide_reserva && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+            <span className="rounded-md border border-white/10 bg-muted/60 px-2 py-0.5 text-[10px] font-medium">
               Pide reserva
             </span>
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-1">
           {phone && (
-            <Button asChild size="sm" className="flex-1 gap-1 bg-emerald-600 hover:bg-emerald-700">
+            <Button asChild size="sm" className="flex-1 gap-1 bg-emerald-700 hover:bg-emerald-600">
               <a
-                href={whatsappUrl(phone, `Hola, vi "${habitacion.name}" en Comunidadescort y quiero consultar arriendo.`)}
+                href={whatsappUrl(
+                  phone,
+                  `Hola, vi "${habitacion.name}" en Comunidadescort y quiero consultar arriendo.`,
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -80,11 +87,14 @@ export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
               </a>
             </Button>
           )}
-          <Button asChild size="sm" variant="outline" className="flex-1">
-            <Link to={detailTo}>Ver más</Link>
+          <Button asChild size="sm" variant="outline" className="flex-1 gap-1 border-white/15">
+            <Link to={detailTo}>
+              Ver más
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   )
 }
