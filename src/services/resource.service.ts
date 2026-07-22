@@ -17,7 +17,8 @@ const RESOURCE_SELECT = `
   rating_avg, reviews_count, is_verified, is_active, is_public, house_rules,
   recibe_mujer, recibe_hombre, pide_reserva, pide_referencias,
   pide_doc_identidad, pide_link_publicacion, acepta_parejas, recibe_agencias,
-  tiene_camaras_seguridad, tiene_wifi, tiene_kit_primeros_auxilios, tiene_extintor,
+  tiene_camaras_seguridad, tiene_wifi, tiene_bano_privado, tiene_kit_primeros_auxilios, tiene_extintor,
+  video_url,
   reviewed_by, reviewed_at, rejection_reason,
   created_at, updated_at,
   author:profiles!author_id(id, alias, avatar_url),
@@ -32,7 +33,8 @@ const PUBLIC_HABITACION_SELECT = `
   rating_avg, reviews_count, is_verified, is_active, is_public, house_rules,
   recibe_mujer, recibe_hombre, pide_reserva, pide_referencias,
   pide_doc_identidad, pide_link_publicacion, acepta_parejas, recibe_agencias,
-  tiene_camaras_seguridad, tiene_wifi, tiene_kit_primeros_auxilios, tiene_extintor,
+  tiene_camaras_seguridad, tiene_wifi, tiene_bano_privado, tiene_kit_primeros_auxilios, tiene_extintor,
+  video_url,
   reviewed_by, reviewed_at, rejection_reason,
   created_at, updated_at,
   city:cities!city_id(id, name, slug),
@@ -40,8 +42,12 @@ const PUBLIC_HABITACION_SELECT = `
 `
 
 const PHOTOS_BUCKET = 'resource-photos'
+const VIDEOS_BUCKET = 'resource-videos'
 const MAX_PHOTO_SIZE = 8 * 1024 * 1024 // antes de convertir a WebP
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024
+const MAX_VIDEO_DURATION_SEC = 60
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime']
 const SIGNED_URL_TTL_SEC = 60 * 60 // 1 hora
 
 function sortPhotos(resource: Resource): Resource {
@@ -52,14 +58,14 @@ function sortPhotos(resource: Resource): Resource {
 }
 
 /** Extrae path de storage desde URL legacy o path relativo. */
-function storagePathFromUrl(url: string): string | null {
+function storagePathFromUrl(url: string, bucket = PHOTOS_BUCKET): string | null {
   if (!url) return null
   if (!url.startsWith('http')) return url.replace(/^\//, '')
 
   const markers = [
-    `/object/public/${PHOTOS_BUCKET}/`,
-    `/object/sign/${PHOTOS_BUCKET}/`,
-    `/object/authenticated/${PHOTOS_BUCKET}/`,
+    `/object/public/${bucket}/`,
+    `/object/sign/${bucket}/`,
+    `/object/authenticated/${bucket}/`,
   ]
   for (const marker of markers) {
     const idx = url.indexOf(marker)
@@ -89,9 +95,40 @@ async function resolvePhotoUrls(photos: ResourcePhoto[] | undefined): Promise<Re
   return resolved
 }
 
+async function resolveVideoUrl(videoUrl: string | null | undefined): Promise<string | null> {
+  if (!videoUrl) return null
+  const path = storagePathFromUrl(videoUrl, VIDEOS_BUCKET)
+  if (!path) return videoUrl
+
+  const { data, error } = await supabase.storage
+    .from(VIDEOS_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL_SEC)
+
+  if (error || !data?.signedUrl) return videoUrl
+  return data.signedUrl
+}
+
+function getVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url)
+      resolve(video.duration)
+    }
+    video.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('No se pudo leer el video'))
+    }
+    video.src = url
+  })
+}
+
 async function withSignedPhotos(resource: Resource): Promise<Resource> {
   const sorted = sortPhotos(resource)
   sorted.photos = await resolvePhotoUrls(sorted.photos)
+  sorted.video_url = await resolveVideoUrl(sorted.video_url)
   return sorted
 }
 
@@ -169,6 +206,7 @@ export const resourceService = {
 
     if (filters.cityId) query = query.eq('city_id', filters.cityId)
     if (filters.tiene_wifi) query = query.eq('tiene_wifi', true)
+    if (filters.tiene_bano_privado) query = query.eq('tiene_bano_privado', true)
     if (filters.pide_reserva) query = query.eq('pide_reserva', true)
     if (filters.acepta_parejas) query = query.eq('acepta_parejas', true)
     if (filters.search?.trim()) {
@@ -404,5 +442,70 @@ export const resourceService = {
 
     const { error } = await supabase.from('resource_photos').delete().eq('id', photoId)
     if (error) throw error
+  },
+
+  async uploadResourceVideo(
+    resourceId: string,
+    file: File,
+    options?: { isPublic?: boolean },
+  ): Promise<Resource> {
+    if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+      throw new Error('Formato de video no permitido. Usa MP4, WebM o MOV.')
+    }
+    if (file.size > MAX_VIDEO_SIZE) {
+      throw new Error('El video no puede superar 50 MB.')
+    }
+
+    const duration = await getVideoDuration(file)
+    if (duration > MAX_VIDEO_DURATION_SEC) {
+      throw new Error('El video no puede superar 60 segundos.')
+    }
+
+    // Quitar video anterior si existe
+    const current = await this.getResourceById(resourceId)
+    if (current?.video_url) {
+      const oldPath = storagePathFromUrl(current.video_url, VIDEOS_BUCKET)
+      if (oldPath) {
+        await supabase.storage.from(VIDEOS_BUCKET).remove([oldPath])
+      }
+    }
+
+    const ext =
+      file.type === 'video/webm' ? 'webm' : file.type === 'video/quicktime' ? 'mov' : 'mp4'
+    const visibility = options?.isPublic ? 'public' : 'private'
+    const path = `${visibility}/${resourceId}/${crypto.randomUUID()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from(VIDEOS_BUCKET)
+      .upload(path, file, { upsert: false, contentType: file.type || 'video/mp4' })
+
+    if (uploadError) throw uploadError
+
+    const { data, error } = await supabase
+      .from('resources')
+      .update({ video_url: path })
+      .eq('id', resourceId)
+      .select(RESOURCE_SELECT)
+      .single()
+
+    if (error) throw error
+    return withSignedPhotos(data as unknown as Resource)
+  },
+
+  async deleteResourceVideo(resourceId: string, videoUrl: string): Promise<Resource> {
+    const path = storagePathFromUrl(videoUrl, VIDEOS_BUCKET)
+    if (path) {
+      await supabase.storage.from(VIDEOS_BUCKET).remove([path])
+    }
+
+    const { data, error } = await supabase
+      .from('resources')
+      .update({ video_url: null })
+      .eq('id', resourceId)
+      .select(RESOURCE_SELECT)
+      .single()
+
+    if (error) throw error
+    return withSignedPhotos(data as unknown as Resource)
   },
 }

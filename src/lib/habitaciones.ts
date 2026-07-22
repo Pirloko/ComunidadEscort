@@ -9,6 +9,7 @@ export const HABITACION_ATTR_LABELS = [
   { key: 'recibe_agencias', label: '¿Recibe agencias?' },
   { key: 'tiene_camaras_seguridad', label: '¿Tiene cámaras de seguridad?' },
   { key: 'tiene_wifi', label: '¿Tiene Wifi?' },
+  { key: 'tiene_bano_privado', label: '¿Tiene baño privado?' },
   { key: 'tiene_kit_primeros_auxilios', label: '¿Tiene kit de primeros auxilios?' },
   { key: 'tiene_extintor', label: '¿Tiene extintor?' },
 ] as const

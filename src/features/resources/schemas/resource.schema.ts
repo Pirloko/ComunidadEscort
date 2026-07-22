@@ -75,6 +75,7 @@ export const resourceSchema = z
     recibe_agencias: z.boolean().optional(),
     tiene_camaras_seguridad: z.boolean().optional(),
     tiene_wifi: z.boolean().optional(),
+    tiene_bano_privado: z.boolean().optional(),
     tiene_kit_primeros_auxilios: z.boolean().optional(),
     tiene_extintor: z.boolean().optional(),
   })

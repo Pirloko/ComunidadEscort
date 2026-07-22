@@ -135,6 +135,18 @@ export function ResourceDetailPage() {
           </>
         )}
 
+        {isHabitacion && resource.video_url && (
+          <div className="border-t p-3">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Video</p>
+            <video
+              src={resource.video_url}
+              controls
+              playsInline
+              className="aspect-video w-full rounded-lg bg-black"
+            />
+          </div>
+        )}
+
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <div>

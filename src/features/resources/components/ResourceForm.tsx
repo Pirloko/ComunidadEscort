@@ -39,6 +39,10 @@ export function ResourceForm({
   const { cities } = useCity()
   const [error, setError] = useState<string | null>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [pendingVideo, setPendingVideo] = useState<File | null>(null)
+  const [existingVideoUrl, setExistingVideoUrl] = useState<string | null>(
+    initialData?.video_url ?? null,
+  )
   const [existingPhotos, setExistingPhotos] = useState<ResourcePhoto[]>(
     initialData?.photos ?? [],
   )
@@ -87,6 +91,7 @@ export function ResourceForm({
       recibe_agencias: initialData?.recibe_agencias ?? false,
       tiene_camaras_seguridad: initialData?.tiene_camaras_seguridad ?? false,
       tiene_wifi: initialData?.tiene_wifi ?? false,
+      tiene_bano_privado: initialData?.tiene_bano_privado ?? false,
       tiene_kit_primeros_auxilios: initialData?.tiene_kit_primeros_auxilios ?? false,
       tiene_extintor: initialData?.tiene_extintor ?? false,
     },
@@ -131,6 +136,7 @@ export function ResourceForm({
         recibe_agencias: !!data.recibe_agencias,
         tiene_camaras_seguridad: !!data.tiene_camaras_seguridad,
         tiene_wifi: !!data.tiene_wifi,
+        tiene_bano_privado: !!data.tiene_bano_privado,
         tiene_kit_primeros_auxilios: !!data.tiene_kit_primeros_auxilios,
         tiene_extintor: !!data.tiene_extintor,
       }
@@ -146,8 +152,22 @@ export function ResourceForm({
             isPublic: !!data.is_public,
           })
         }
+      }
+
+      if (isHabitacion && pendingVideo) {
+        resource = await resourceService.uploadResourceVideo(resource.id, pendingVideo, {
+          isPublic: !!data.is_public,
+        })
+        setPendingVideo(null)
+        setExistingVideoUrl(resource.video_url)
+      }
+
+      if (isHabitacion && (pendingFiles.length > 0 || pendingVideo)) {
         const refreshed = await resourceService.getResourceById(resource.id)
-        if (refreshed) resource = refreshed
+        if (refreshed) {
+          resource = refreshed
+          setExistingVideoUrl(refreshed.video_url)
+        }
       }
 
       onSuccess(resource)
@@ -163,6 +183,18 @@ export function ResourceForm({
       setExistingPhotos((prev) => prev.filter((p) => p.id !== photo.id))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo eliminar la foto')
+    }
+  }
+
+  const handleRemoveExistingVideo = async () => {
+    if (!initialData?.id || !existingVideoUrl) return
+    if (!confirm('¿Eliminar el video?')) return
+    try {
+      const updated = await resourceService.deleteResourceVideo(initialData.id, existingVideoUrl)
+      setExistingVideoUrl(updated.video_url)
+      setPendingVideo(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el video')
     }
   }
 
@@ -454,6 +486,40 @@ export function ResourceForm({
             )}
             <p className="text-xs text-muted-foreground">
               JPG, PNG o WebP — se convierten a WebP optimizado (máx. ~2,5 MB c/u).
+            </p>
+          </div>
+
+          <div className="space-y-3 rounded-lg border p-4">
+            <h3 className="text-sm font-semibold">Video (opcional, máximo 1)</h3>
+            {existingVideoUrl && !pendingVideo && (
+              <div className="space-y-2">
+                <video
+                  src={existingVideoUrl}
+                  controls
+                  className="max-h-56 w-full rounded-lg border bg-black"
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => void handleRemoveExistingVideo()}>
+                  <X className="h-3.5 w-3.5" />
+                  Quitar video
+                </Button>
+              </div>
+            )}
+            {pendingVideo && (
+              <p className="text-xs text-muted-foreground">
+                Video pendiente: {pendingVideo.name} (se sube al guardar).
+              </p>
+            )}
+            <Input
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null
+                setPendingVideo(file)
+                e.target.value = ''
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              MP4, WebM o MOV — máx. 50 MB y 60 segundos. Reemplaza el video anterior si ya había uno.
             </p>
           </div>
         </>

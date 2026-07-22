@@ -34,8 +34,11 @@ export interface HabitacionAttrs {
   recibe_agencias: boolean
   tiene_camaras_seguridad: boolean
   tiene_wifi: boolean
+  tiene_bano_privado: boolean
   tiene_kit_primeros_auxilios: boolean
   tiene_extintor: boolean
+  /** Path o URL firmada del video (máx. 1) */
+  video_url: string | null
 }
 
 export interface Resource extends HabitacionAttrs {
@@ -96,8 +99,10 @@ export interface CreateResourceInput {
   recibe_agencias?: boolean
   tiene_camaras_seguridad?: boolean
   tiene_wifi?: boolean
+  tiene_bano_privado?: boolean
   tiene_kit_primeros_auxilios?: boolean
   tiene_extintor?: boolean
+  video_url?: string | null
 }
 
 export interface UpdateResourceInput {
@@ -127,8 +132,10 @@ export interface UpdateResourceInput {
   recibe_agencias?: boolean
   tiene_camaras_seguridad?: boolean
   tiene_wifi?: boolean
+  tiene_bano_privado?: boolean
   tiene_kit_primeros_auxilios?: boolean
   tiene_extintor?: boolean
+  video_url?: string | null
   is_verified?: boolean
   is_active?: boolean
 }
@@ -142,6 +149,7 @@ export interface PublicHabitacionFilters {
   search?: string
   cityId?: string
   tiene_wifi?: boolean
+  tiene_bano_privado?: boolean
   pide_reserva?: boolean
   acepta_parejas?: boolean
   limit?: number

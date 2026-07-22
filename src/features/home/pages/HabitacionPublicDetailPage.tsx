@@ -122,6 +122,18 @@ export function HabitacionPublicDetailPage() {
             </>
           )}
 
+          {habitacion.video_url && (
+            <div className="border-t p-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Video</p>
+              <video
+                src={habitacion.video_url}
+                controls
+                playsInline
+                className="aspect-video w-full rounded-lg bg-black"
+              />
+            </div>
+          )}
+
           <CardHeader className="space-y-2 pb-2">
             <h1 className="text-xl font-bold leading-snug">{habitacion.name}</h1>
             {habitacion.city && (

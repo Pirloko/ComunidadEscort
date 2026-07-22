@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MapPin, MessageCircle, Wifi, Users, ArrowRight } from 'lucide-react'
+import { MapPin, MessageCircle, Wifi, Users, ArrowRight, Bath } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { whatsappUrl, primaryContactPhone } from '@/lib/habitaciones'
 import type { Resource } from '@/types/resources'
@@ -57,6 +57,11 @@ export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
           {habitacion.tiene_wifi && (
             <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-muted/60 px-2 py-0.5 text-[10px] font-medium">
               <Wifi className="h-3 w-3" /> Wifi
+            </span>
+          )}
+          {habitacion.tiene_bano_privado && (
+            <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-muted/60 px-2 py-0.5 text-[10px] font-medium">
+              <Bath className="h-3 w-3" /> Baño privado
             </span>
           )}
           {habitacion.acepta_parejas && (

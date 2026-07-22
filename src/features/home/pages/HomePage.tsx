@@ -26,13 +26,20 @@ import '@/features/home/home-landing.css'
 export function HomePage() {
   const { session, profile } = useAuth()
   const [cityId, setCityId] = useState('')
+  const [soloBanoPrivado, setSoloBanoPrivado] = useState(false)
 
   const { data: citiesWithRooms = [], isLoading: loadingCities } = useQuery({
     queryKey: ['public-habitacion-cities'],
     queryFn: () => resourceService.getPublicHabitacionCities(),
   })
 
-  const filters = useMemo(() => ({ cityId: cityId || undefined }), [cityId])
+  const filters = useMemo(
+    () => ({
+      cityId: cityId || undefined,
+      tiene_bano_privado: soloBanoPrivado || undefined,
+    }),
+    [cityId, soloBanoPrivado],
+  )
 
   const { data: habitaciones = [], isLoading } = useQuery({
     queryKey: ['public-habitaciones', filters],
@@ -140,6 +147,18 @@ export function HomePage() {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={soloBanoPrivado ? 'accent' : 'outline'}
+              className={cn('shrink-0', soloBanoPrivado && 'shadow-sm')}
+              onClick={() => setSoloBanoPrivado((v) => !v)}
+            >
+              Baño privado
+            </Button>
           </div>
         </section>
 
