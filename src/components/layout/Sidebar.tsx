@@ -67,7 +67,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3">
-        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="eyebrow mb-2 px-3 text-muted-foreground">
           Comunidad
         </p>
         <ul className="space-y-0.5">
@@ -131,7 +131,7 @@ export function Sidebar() {
           )}
         </ul>
 
-        <p className="mb-2 mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="eyebrow mb-2 mt-6 px-3 text-muted-foreground">
           Ciudades
         </p>
         <ul className="space-y-0.5">

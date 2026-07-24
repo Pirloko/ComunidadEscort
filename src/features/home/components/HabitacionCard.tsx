@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom'
 import { MapPin, MessageCircle, Wifi, Users, ArrowRight, Bath } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  HabitacionPhotoSeal,
+  habitacionCoverUrl,
+  HABITACION_DEFAULT_COVER,
+} from '@/features/home/components/HabitacionPhotoSeal'
 import { whatsappUrl, habitacionWhatsappPhone } from '@/lib/habitaciones'
 import type { Resource } from '@/types/resources'
 
@@ -10,28 +15,24 @@ interface HabitacionCardProps {
 }
 
 export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
-  const photo = habitacion.photos?.[0]?.url
+  const photo = habitacionCoverUrl(habitacion.photos)
+  const isDefaultCover = photo === HABITACION_DEFAULT_COVER
   const whatsappPhone = habitacionWhatsappPhone(habitacion.whatsapp_phone)
 
   return (
     <article className="home-card-lift group overflow-hidden rounded-2xl border border-white/8 bg-card/80">
       <Link to={detailTo} className="block overflow-hidden">
         <div className="relative aspect-[4/3] bg-muted">
-          {photo ? (
-            <img
-              src={photo}
-              alt={habitacion.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-              loading="lazy"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Sin foto
-            </div>
-          )}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-80" />
+          <img
+            src={photo}
+            alt={habitacion.name}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+          {!isDefaultCover && <HabitacionPhotoSeal />}
+          <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-80" />
           {habitacion.city && (
-            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+            <span className="absolute bottom-3 left-3 z-[3] inline-flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
               <MapPin className="h-3 w-3" />
               {habitacion.city.name}
             </span>
@@ -43,7 +44,7 @@ export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
         <div>
           <Link
             to={detailTo}
-            className="font-semibold text-foreground transition-colors hover:text-primary"
+            className="card-title text-foreground transition-colors hover:text-primary"
           >
             {habitacion.name}
           </Link>

@@ -152,6 +152,18 @@ async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
   )
 }
 
+/** Mezcla Fisher–Yates — orden aleatorio en cada carga de /home. */
+function shuffleArray<T>(items: T[]): T[] {
+  const arr = [...items]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = arr[i]!
+    arr[i] = arr[j]!
+    arr[j] = tmp
+  }
+  return arr
+}
+
 async function withSignedPhotosList(resources: Resource[]): Promise<Resource[]> {
   return Promise.all(resources.map(withSignedPhotos))
 }
@@ -281,7 +293,8 @@ export const resourceService = {
 
     const { data, error } = await query
     if (error) throw error
-    return withSignedCovers((data ?? []) as unknown as Resource[])
+    const signed = await withSignedCovers((data ?? []) as unknown as Resource[])
+    return shuffleArray(signed)
   },
 
   async getPublicHabitacionById(resourceId: string): Promise<Resource | null> {
@@ -572,7 +585,7 @@ export const resourceService = {
       throw new Error(`Máximo ${MAX_HABITACION_PHOTOS} fotos por habitación.`)
     }
 
-    const webp = await convertImageToWebp(file)
+    const webp = await convertImageToWebp(file, { watermark: false })
     const visibility = options?.isPublic ? 'public' : 'private'
     const path = `${visibility}/${resourceId}/${crypto.randomUUID()}.webp`
 

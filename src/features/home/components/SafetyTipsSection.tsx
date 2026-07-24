@@ -12,10 +12,10 @@ export function SafetyTipsSection() {
           <ShieldAlert className="h-4 w-4 text-amber-400" />
         </span>
         <div>
-          <h2 className="home-display text-xl font-semibold text-foreground">
+          <h2 className="home-display text-[clamp(1.35rem,1.15rem+1vw,1.65rem)] font-semibold leading-tight text-foreground">
             Consejos para un arriendo seguro
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          <p className="page-subtitle mt-2.5 leading-relaxed">
             <strong className="font-medium text-foreground">Importante:</strong> filtrar
             quién entra al inmueble es responsabilidad del dueño. Pide referencias e
             información completa antes de confirmar.
@@ -25,10 +25,10 @@ export function SafetyTipsSection() {
 
       <div className="mt-6 grid gap-6 border-t border-white/8 pt-6 md:grid-cols-2">
         <div>
-          <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-400/90">
+          <h3 className="eyebrow mb-3 text-amber-400/90">
             Arrendadores
           </h3>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+          <ul className="space-y-2.5 text-[0.9375rem] text-muted-foreground">
             {CONSEJOS_ARRENDADORES.map((item) => (
               <li key={item} className="flex gap-2.5">
                 <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-400" />
@@ -38,10 +38,10 @@ export function SafetyTipsSection() {
           </ul>
         </div>
         <div>
-          <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-400/90">
+          <h3 className="eyebrow mb-3 text-amber-400/90">
             Pasajeros
           </h3>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+          <ul className="space-y-2.5 text-[0.9375rem] text-muted-foreground">
             {CONSEJOS_PASAJEROS.map((item) => (
               <li key={item} className="flex gap-2.5">
                 <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-400" />

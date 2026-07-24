@@ -70,7 +70,7 @@ export function AlertDetailPage() {
                   <AlertStatusBadge status={alert.status} />
                 )}
               </div>
-              <h1 className="mt-3 text-xl font-bold sm:text-2xl">{alert.title}</h1>
+              <h1 className="page-title mt-3">{alert.title}</h1>
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 {(alert.city || alert.city_other) && (
                   <span className="flex items-center gap-1">

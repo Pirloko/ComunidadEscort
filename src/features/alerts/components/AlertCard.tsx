@@ -70,7 +70,7 @@ export function AlertCard({ alert, showStatus = false }: AlertCardProps) {
                 )}
               </div>
 
-              <h3 className="mt-2 font-semibold leading-snug">{alert.title}</h3>
+              <h3 className="card-title mt-2 leading-snug">{alert.title}</h3>
               {alert.client_number && (
                 <p className="mt-1 text-xs font-medium text-muted-foreground">
                   Cliente: {alert.client_number}

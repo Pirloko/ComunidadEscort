@@ -79,7 +79,7 @@ export function ResourceForm({
       facebook_url: initialData?.facebook_url ?? '',
       whatsapp_phone: initialData?.whatsapp_phone ?? '',
       contact_phone: initialData?.contact_phone ?? '',
-      is_public: initialData?.is_public ?? false,
+      is_public: initialData?.is_public ?? forceCategory === 'habitaciones_escort',
       house_rules: initialData?.house_rules ?? '',
       recibe_mujer: initialData?.recibe_mujer ?? true,
       recibe_hombre: initialData?.recibe_hombre ?? false,

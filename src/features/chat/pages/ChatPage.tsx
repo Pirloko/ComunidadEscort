@@ -68,7 +68,7 @@ export function ChatPage() {
           <MessageCircle className="h-6 w-6 text-primary" />
           Chat de la comunidad
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="page-subtitle mt-1.5">
           Sala única para todas las miembros. Envía texto, emoticones, stickers o GIFs.
         </p>
       </div>

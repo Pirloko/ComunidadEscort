@@ -110,7 +110,7 @@ export function ProfilePage() {
 
       {userPosts.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Publicaciones</h2>
+          <h2 className="section-title">Publicaciones</h2>
           {userPosts.map((post) => (
             <PostCard key={post.id} post={post} compact />
           ))}

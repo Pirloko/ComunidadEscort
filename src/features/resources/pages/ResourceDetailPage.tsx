@@ -364,7 +364,7 @@ export function ResourceDetailPage() {
 
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">Reseñas</h2>
+          <h2 className="section-title">Reseñas</h2>
           <p className="text-xs text-muted-foreground">
             Solo visibles para miembros con sesión iniciada.
           </p>
@@ -382,7 +382,7 @@ export function ResourceDetailPage() {
 
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">Comentarios</h2>
+          <h2 className="section-title">Comentarios</h2>
         </CardHeader>
         <CardContent>
           <ResourceCommentThread resourceId={resource.id} comments={comments} />

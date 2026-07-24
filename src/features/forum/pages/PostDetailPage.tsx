@@ -117,8 +117,8 @@ export function PostDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <h1 className="text-xl font-bold leading-tight sm:text-2xl">{post.title}</h1>
-          <p className="whitespace-pre-wrap text-foreground/90 leading-relaxed">{post.content}</p>
+          <h1 className="page-title">{post.title}</h1>
+          <p className="whitespace-pre-wrap text-[1.02rem] leading-relaxed text-foreground/90">{post.content}</p>
           <div className="flex items-center gap-2 border-t pt-4">
             <LikeButton
               postId={post.id}
@@ -134,7 +134,7 @@ export function PostDetailPage() {
 
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">Comentarios</h2>
+          <h2 className="section-title">Comentarios</h2>
         </CardHeader>
         <CardContent>
           {commentsLoading ? (

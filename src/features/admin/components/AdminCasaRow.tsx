@@ -19,6 +19,8 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
     queryClient.invalidateQueries({ queryKey: ['casas-habitaciones'] })
     queryClient.invalidateQueries({ queryKey: ['resources'] })
     queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
+    queryClient.invalidateQueries({ queryKey: ['public-habitaciones'] })
+    queryClient.invalidateQueries({ queryKey: ['public-habitacion-cities'] })
   }
 
   const toggleActiveMutation = useMutation({

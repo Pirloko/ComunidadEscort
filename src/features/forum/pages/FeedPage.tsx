@@ -54,7 +54,7 @@ export function FeedPage() {
     <div className="mx-auto max-w-lg space-y-6">
       <div>
         <h1 className="page-title">Hola, {profile?.alias}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="page-subtitle mt-1.5">
           Bienvenida a tu comunidad segura.
         </p>
       </div>
@@ -103,7 +103,7 @@ export function FeedPage() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Actividad reciente</h2>
+          <h2 className="section-title">Actividad reciente</h2>
           <Link
             to="/alerts"
             className="flex shrink-0 items-center gap-1 text-sm text-accent hover:underline"

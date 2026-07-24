@@ -28,7 +28,6 @@ import '@/features/home/home-landing.css'
 export function HomePage() {
   const { session, profile } = useAuth()
   const [cityId, setCityId] = useState('')
-  const [soloBanoPrivado, setSoloBanoPrivado] = useState(false)
   const [habitaciones, setHabitaciones] = useState<Resource[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
@@ -36,14 +35,15 @@ export function HomePage() {
   const { data: citiesWithRooms = [], isLoading: loadingCities } = useQuery({
     queryKey: ['public-habitacion-cities'],
     queryFn: () => resourceService.getPublicHabitacionCities(),
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 
   const filters = useMemo(
     () => ({
       cityId: cityId || undefined,
-      tiene_bano_privado: soloBanoPrivado || undefined,
     }),
-    [cityId, soloBanoPrivado],
+    [cityId],
   )
 
   const { isLoading, isError, refetch } = useQuery({
@@ -58,6 +58,8 @@ export function HomePage() {
       setHasMore(page.length >= PUBLIC_HABITACIONES_PAGE_SIZE)
       return page
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 
   const loadMore = async () => {
@@ -123,41 +125,47 @@ export function HomePage() {
 
       <main className="relative mx-auto max-w-lg space-y-8 px-3 pb-[max(3rem,env(safe-area-inset-bottom))] pt-5 sm:space-y-10 sm:pt-6">
         {/* Ciudades */}
-        <section id="habitaciones" className="scroll-mt-16 space-y-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-              Habitaciones para escort
+        <section id="habitaciones" className="scroll-mt-16 space-y-4">
+          <div className="home-cities-intro">
+            <p className="home-cities-eyebrow home-fade-up">
+              <span className="home-cities-eyebrow-text">Habitaciones para escort</span>
             </p>
-            <h2 className="home-display mt-1 text-xl font-semibold text-foreground">
+            <h2 className="home-display home-cities-title home-fade-up home-fade-up-delay-1">
               Elige tu ciudad
             </h2>
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
-              Solo ciudades con publicaciones activas
+            <p className="home-cities-sub home-fade-up home-fade-up-delay-2">
+              <MapPin className="home-cities-sub-icon" aria-hidden />
+              <span>Solo ciudades con publicaciones activas</span>
             </p>
           </div>
 
-          <div className="rounded-xl border border-white/8 bg-card/60 p-3 backdrop-blur-sm">
+          <div className="home-fade-up home-fade-up-delay-3 rounded-xl border border-white/8 bg-card/60 p-3 backdrop-blur-sm">
             {loadingCities ? (
-              <div className="flex gap-2 overflow-hidden">
-                <Skeleton className="h-9 w-20 shrink-0 rounded-md" />
-                <Skeleton className="h-9 w-24 shrink-0 rounded-md" />
-                <Skeleton className="h-9 w-28 shrink-0 rounded-md" />
+              <div className="grid grid-cols-3 gap-2">
+                <Skeleton className="h-10 w-full rounded-full" />
+                <Skeleton className="h-10 w-full rounded-full" />
+                <Skeleton className="h-10 w-full rounded-full" />
+                <Skeleton className="h-10 w-full rounded-full" />
+                <Skeleton className="h-10 w-full rounded-full" />
+                <Skeleton className="h-10 w-full rounded-full" />
               </div>
             ) : citiesWithRooms.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Aún no hay habitaciones públicas publicadas.
               </p>
             ) : (
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   type="button"
                   size="sm"
                   variant={cityId === '' ? 'accent' : 'outline'}
-                  className={cn('home-city-btn shrink-0 gap-1.5', cityId === '' && 'shadow-sm')}
+                  className={cn(
+                    'home-city-btn h-auto min-h-10 w-full flex-col gap-0.5 px-1.5 py-2 text-center text-[0.7rem] leading-tight sm:flex-row sm:gap-1.5 sm:text-sm',
+                    cityId === '' && 'shadow-sm',
+                  )}
                   onClick={() => setCityId('')}
                 >
-                  Todas
+                  <span className="truncate">Todas</span>
                   <span className="rounded-full bg-background/20 px-1.5 text-[10px] tabular-nums">
                     {totalPublic}
                   </span>
@@ -169,12 +177,12 @@ export function HomePage() {
                     size="sm"
                     variant={cityId === c.id ? 'accent' : 'outline'}
                     className={cn(
-                      'home-city-btn shrink-0 gap-1.5',
+                      'home-city-btn h-auto min-h-10 w-full flex-col gap-0.5 px-1.5 py-2 text-center text-[0.7rem] leading-tight sm:flex-row sm:gap-1.5 sm:text-sm',
                       cityId === c.id && 'shadow-sm',
                     )}
                     onClick={() => setCityId(c.id === cityId ? '' : c.id)}
                   >
-                    {c.name}
+                    <span className="line-clamp-2 break-words">{c.name}</span>
                     <span
                       className={cn(
                         'rounded-full px-1.5 text-[10px] tabular-nums',
@@ -188,23 +196,11 @@ export function HomePage() {
               </div>
             )}
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant={soloBanoPrivado ? 'accent' : 'outline'}
-              className={cn('shrink-0', soloBanoPrivado && 'shadow-sm')}
-              onClick={() => setSoloBanoPrivado((v) => !v)}
-            >
-              Baño privado
-            </Button>
-          </div>
         </section>
 
         {/* Resultados */}
         <section className="space-y-4">
-          <h2 className="home-display text-lg font-semibold text-foreground">
+          <h2 className="home-display section-title text-foreground">
             Publicaciones
             {!isLoading && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -275,13 +271,13 @@ export function HomePage() {
           />
           <div className="relative space-y-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="eyebrow text-primary">
                 Si eres escort
               </p>
-              <h2 className="home-display mt-1.5 text-xl font-semibold text-foreground">
+              <h2 className="home-display home-cities-title mt-1.5 !text-[clamp(1.55rem,6vw,2.1rem)] text-foreground">
                 Haz tuya la comunidad
               </h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              <p className="page-subtitle mt-2.5 leading-relaxed">
                 Hospedaje confiable, avisos de seguridad y apoyo entre colegas. Un espacio
                 privado, pensado para cuidarte.
               </p>

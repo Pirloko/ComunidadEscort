@@ -28,7 +28,7 @@ export function CreateAlertPage() {
       <div className="mx-auto max-w-lg space-y-5">
         <div>
           <h1 className="page-title">Funar o recomendar cliente</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="page-subtitle mt-1.5">
             Elige qué quieres hacer. Ambos reportes pasan por revisión antes de publicarse.
           </p>
         </div>

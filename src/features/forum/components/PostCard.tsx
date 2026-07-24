@@ -52,7 +52,7 @@ export function PostCard({ post, compact = false }: PostCardProps) {
             </div>
 
             <Link to={`/forum/${post.id}`} className="mt-3 block group">
-              <h3 className="font-semibold leading-snug transition-colors group-hover:text-accent">
+              <h3 className="card-title leading-snug transition-colors group-hover:text-accent">
                 {post.title}
               </h3>
               {!compact && (

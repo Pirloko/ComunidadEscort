@@ -20,8 +20,8 @@ export function ErrorState({
       <div className="mb-4 rounded-full bg-destructive/10 p-4">
         <AlertCircle className="h-8 w-8 text-destructive" />
       </div>
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{message}</p>
+      <h3 className="section-title">{title}</h3>
+      <p className="page-subtitle mt-1.5 max-w-sm">{message}</p>
       {onRetry && (
         <Button variant="outline" className="mt-4" onClick={onRetry}>
           Reintentar
