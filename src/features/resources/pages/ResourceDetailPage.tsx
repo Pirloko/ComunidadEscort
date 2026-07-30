@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ResourceCategoryBadge } from '@/features/resources/components/ResourceCategoryBadge'
 import { ResourceCommentThread } from '@/features/resources/components/ResourceCommentThread'
 import { ResourceReviewSection } from '@/features/resources/components/ResourceReviewSection'
+import { CasasHabitacionDetailView } from '@/features/resources/components/CasasHabitacionDetailView'
 import { HabitacionAttrsList } from '@/features/home/components/HabitacionAttrsList'
 import { HabitacionMediaGallery } from '@/features/home/components/HabitacionMediaGallery'
 import { AlertStatusBadge } from '@/features/alerts/components/AlertStatusBadge'
@@ -98,6 +99,20 @@ export function ResourceDetailPage() {
 
   if (isError || !resource || !canView) {
     return <ErrorState title="Dato no encontrado" onRetry={() => refetch()} />
+  }
+
+  if (fromCasas && isHabitacion) {
+    return (
+      <div className="mx-auto max-w-lg">
+        <CasasHabitacionDetailView
+          resource={resource}
+          reviews={reviews}
+          comments={comments}
+          userId={user?.id}
+          sharePath={`/casas/${resource.id}`}
+        />
+      </div>
+    )
   }
 
   return (

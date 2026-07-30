@@ -12,6 +12,8 @@ interface BookmarkButtonProps {
   size?: 'sm' | 'md'
   className?: string
   showLabel?: boolean
+  savedLabel?: string
+  unsavedLabel?: string
   onClick?: (e: MouseEvent) => void
 }
 
@@ -21,6 +23,8 @@ export function BookmarkButton({
   size = 'md',
   className,
   showLabel = false,
+  savedLabel = 'Guardado',
+  unsavedLabel = 'Guardar',
   onClick,
 }: BookmarkButtonProps) {
   const { user } = useAuth()
@@ -46,11 +50,11 @@ export function BookmarkButton({
       )}
       onClick={handleClick}
       disabled={!user || isPending}
-      aria-label={saved ? 'Quitar de guardados' : 'Guardar'}
-      title={saved ? 'Quitar de guardados' : 'Guardar'}
+      aria-label={saved ? `Quitar de ${savedLabel.toLowerCase()}` : unsavedLabel}
+      title={saved ? savedLabel : unsavedLabel}
     >
       <Bookmark className={cn('h-4 w-4', saved && 'fill-current')} />
-      {showLabel && <span className="text-sm">{saved ? 'Guardado' : 'Guardar'}</span>}
+      {showLabel && <span className="text-sm">{saved ? savedLabel : unsavedLabel}</span>}
     </Button>
   )
 }

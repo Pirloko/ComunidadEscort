@@ -12,7 +12,7 @@ const POST_SELECT = `
 
 export const postService = {
   async getPosts(params: {
-    cityId: string
+    cityId?: string
     category?: PostCategory
     search?: string
     limit?: number
@@ -21,9 +21,10 @@ export const postService = {
     let query = supabase
       .from('posts')
       .select(POST_SELECT)
-      .eq('city_id', params.cityId)
       .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
+
+    if (params.cityId) query = query.eq('city_id', params.cityId)
 
     if (params.category) {
       query = query.eq('category', params.category)
@@ -33,8 +34,9 @@ export const postService = {
       query = query.or(`title.ilike.%${params.search}%,content.ilike.%${params.search}%`)
     }
 
-    if (params.limit) query = query.limit(params.limit)
-    if (params.offset) query = query.range(params.offset, params.offset + (params.limit ?? 20) - 1)
+    const limit = params.limit ?? 30
+    const offset = params.offset ?? 0
+    query = query.range(offset, offset + limit - 1)
 
     const { data, error } = await query
     if (error) throw error
@@ -64,12 +66,11 @@ export const postService = {
     return (data ?? []) as unknown as Post[]
   },
 
-  async getCategoryCounts(cityId: string): Promise<Record<string, number>> {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('category')
-      .eq('city_id', cityId)
+  async getCategoryCounts(cityId?: string): Promise<Record<string, number>> {
+    let query = supabase.from('posts').select('category')
+    if (cityId) query = query.eq('city_id', cityId)
 
+    const { data, error } = await query
     if (error) throw error
 
     const counts: Record<string, number> = { all: data?.length ?? 0 }

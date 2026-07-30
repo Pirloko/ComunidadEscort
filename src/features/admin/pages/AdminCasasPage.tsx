@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Home, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Home, Plus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -15,25 +15,42 @@ import { cn } from '@/lib/utils'
 
 type StatusFilter = 'all' | 'active' | 'paused'
 
+const PAGE_SIZE = 10
+
 export function AdminCasasPage() {
   const { cities } = useCity()
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [cityId, setCityId] = useState('')
   const [status, setStatus] = useState<StatusFilter>('all')
+  const [page, setPage] = useState(1)
 
-  const { data: casas = [], isLoading } = useQuery({
-    queryKey: ['admin-casas', search, cityId, status],
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedSearch(search.trim())
+      setPage(1)
+    }, 300)
+    return () => window.clearTimeout(t)
+  }, [search])
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['admin-casas', debouncedSearch, cityId, status, page],
     queryFn: () =>
       resourceService.getHabitacionesForAdmin({
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         cityId: cityId || undefined,
         onlyActive: status === 'active' ? true : undefined,
-        limit: 100,
+        onlyPaused: status === 'paused' ? true : undefined,
+        cities,
+        page,
+        pageSize: PAGE_SIZE,
       }),
+    placeholderData: (prev) => prev,
   })
 
-  const filtered =
-    status === 'paused' ? casas.filter((c) => !c.is_active) : casas
+  const casas = data?.items ?? []
+  const total = data?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <Card>
@@ -66,12 +83,16 @@ export function AdminCasasPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre…"
+            placeholder="Buscar por nombre, número o ciudad…"
             className="max-w-md"
+            aria-label="Buscar casas"
           />
           <select
             value={cityId}
-            onChange={(e) => setCityId(e.target.value)}
+            onChange={(e) => {
+              setCityId(e.target.value)
+              setPage(1)
+            }}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             aria-label="Filtrar por ciudad"
           >
@@ -96,13 +117,23 @@ export function AdminCasasPage() {
                 size="sm"
                 variant="ghost"
                 className={cn(status === value && 'bg-card shadow-sm')}
-                onClick={() => setStatus(value)}
+                onClick={() => {
+                  setStatus(value)
+                  setPage(1)
+                }}
               >
                 {label}
               </Button>
             ))}
           </div>
         </div>
+
+        {!isLoading && total > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {total} casa{total !== 1 ? 's' : ''} · página {page} de {totalPages}
+            {isFetching ? ' · actualizando…' : ''}
+          </p>
+        )}
       </CardHeader>
 
       <CardContent className="p-0">
@@ -113,7 +144,7 @@ export function AdminCasasPage() {
           </div>
         )}
 
-        {!isLoading && filtered.length === 0 && (
+        {!isLoading && casas.length === 0 && (
           <EmptyState
             icon={Home}
             title="Sin casas"
@@ -129,9 +160,48 @@ export function AdminCasasPage() {
           />
         )}
 
-        {filtered.map((casa) => (
+        {casas.map((casa) => (
           <AdminCasaRow key={casa.id} resource={casa} />
         ))}
+
+        {!isLoading && totalPages > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-1.5 border-t p-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              aria-label="Página anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Button
+                key={p}
+                type="button"
+                size="sm"
+                variant={p === page ? 'accent' : 'outline'}
+                className="min-w-9"
+                onClick={() => setPage(p)}
+                aria-label={`Página ${p}`}
+                aria-current={p === page ? 'page' : undefined}
+              >
+                {p}
+              </Button>
+            ))}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              aria-label="Página siguiente"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

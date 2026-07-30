@@ -6,23 +6,31 @@ import {
   habitacionCoverUrl,
   HABITACION_DEFAULT_COVER,
 } from '@/features/home/components/HabitacionPhotoSeal'
-import { whatsappUrl, habitacionWhatsappPhone } from '@/lib/habitaciones'
+import { getRecibeALabel, whatsappUrl, habitacionWhatsappPhone } from '@/lib/habitaciones'
+import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
 import type { Resource } from '@/types/resources'
 
 interface HabitacionCardProps {
   habitacion: Resource
   detailTo: string
+  showFavorite?: boolean
 }
 
-export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
+export function HabitacionCard({ habitacion, detailTo, showFavorite = false }: HabitacionCardProps) {
   const photo = habitacionCoverUrl(habitacion.photos)
   const isDefaultCover = photo === HABITACION_DEFAULT_COVER
   const whatsappPhone = habitacionWhatsappPhone(habitacion.whatsapp_phone)
+  const recibeLabel = getRecibeALabel(
+    habitacion.recibe_mujer,
+    habitacion.recibe_hombre,
+    habitacion.recibe_trans,
+  )
 
   return (
-    <article className="home-card-lift group overflow-hidden rounded-2xl border border-white/8 bg-card/80">
-      <Link to={detailTo} className="block overflow-hidden">
-        <div className="relative aspect-[4/3] bg-muted">
+    <article className="home-card-lift group overflow-hidden rounded-2xl border border-white/10 bg-card/90 shadow-[0_16px_40px_-28px_rgba(0,0,0,0.9)]">
+      <div className="relative">
+        <Link to={detailTo} className="block overflow-hidden">
+          <div className="relative aspect-[4/3] bg-muted">
           <img
             src={photo}
             alt={habitacion.name}
@@ -30,24 +38,40 @@ export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
             loading="lazy"
           />
           {!isDefaultCover && <HabitacionPhotoSeal />}
-          <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-80" />
+          <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
           {habitacion.city && (
-            <span className="absolute bottom-3 left-3 z-[3] inline-flex items-center gap-1 rounded-md bg-black/55 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+            <span className="absolute bottom-3 left-3 z-[3] inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">
               <MapPin className="h-3 w-3" />
               {habitacion.city.name}
             </span>
           )}
         </div>
-      </Link>
+        </Link>
+        {showFavorite && (
+          <div className="absolute right-2 top-2 z-[4]">
+            <BookmarkButton
+              itemType="resource"
+              itemId={habitacion.id}
+              size="sm"
+              className="h-9 w-9 rounded-full border border-white/15 bg-black/55 text-white backdrop-blur-md hover:bg-black/70 hover:text-white"
+            />
+          </div>
+        )}
+      </div>
 
-      <div className="space-y-3 p-4">
-        <div>
+      <div className="space-y-3.5 p-4">
+        <div className="space-y-2.5">
           <Link
             to={detailTo}
-            className="card-title text-foreground transition-colors hover:text-primary"
+            className="home-display block text-[1.15rem] font-semibold leading-snug tracking-tight text-foreground transition-colors hover:text-primary"
           >
             {habitacion.name}
           </Link>
+
+          <p className="habitacion-recibe-badge" title="Quiénes pueden hospedarse">
+            <span className="habitacion-recibe-badge-label">Recibe a</span>
+            <span className="habitacion-recibe-badge-value">{recibeLabel}</span>
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-1.5">
@@ -73,7 +97,7 @@ export function HabitacionCard({ habitacion, detailTo }: HabitacionCardProps) {
           )}
         </div>
 
-        <div className="flex gap-2.5 pt-1">
+        <div className="flex gap-2.5 pt-0.5">
           {whatsappPhone && (
             <Button
               asChild

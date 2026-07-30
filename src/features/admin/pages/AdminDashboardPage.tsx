@@ -14,10 +14,11 @@ export function AdminDashboardPage() {
     refetchInterval: 60000,
   })
 
-  const { data: casas = [], isLoading: casasLoading } = useQuery({
+  const { data: casasData, isLoading: casasLoading } = useQuery({
     queryKey: ['admin-casas', 'dashboard'],
-    queryFn: () => resourceService.getHabitacionesForAdmin({ limit: 5 }),
+    queryFn: () => resourceService.getHabitacionesForAdmin({ limit: 5, page: 1, pageSize: 5 }),
   })
+  const casas = casasData?.items ?? []
 
   return (
     <div className="space-y-6">

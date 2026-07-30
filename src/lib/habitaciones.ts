@@ -22,12 +22,10 @@ export function getRecibeALabel(
 ): string {
   const parts: string[] = []
   if (recibeMujer) parts.push('Mujer')
-  if (recibeHombre) parts.push('Hombre')
   if (recibeTrans) parts.push('Trans')
+  if (recibeHombre) parts.push('Hombre')
   if (parts.length === 0) return 'No especificado'
-  if (parts.length === 1) return parts[0]
-  if (parts.length === 2) return `${parts[0]} y ${parts[1]}`
-  return `${parts[0]}, ${parts[1]} y ${parts[2]}`
+  return parts.join(', ')
 }
 
 export function whatsappUrl(phone: string, text?: string): string {
@@ -69,8 +67,14 @@ export const HABITACION_CONTACT_NOTICE =
 /** Máximo de fotos por habitación (UI + service + trigger SQL). */
 export const MAX_HABITACION_PHOTOS = 10
 
-/** Límite por defecto del listado público (/home). Suficiente para ~60–100 casas. */
-export const PUBLIC_HABITACIONES_PAGE_SIZE = 24
+/** Límite por página del listado público por ciudad y casas en comunidad. */
+export const PUBLIC_HABITACIONES_PAGE_SIZE = 10
+export const CASAS_PAGE_SIZE = PUBLIC_HABITACIONES_PAGE_SIZE
+
+/** Carrusel Destacadas en /home (aleatorio por visita; luego irá por reseñas). */
+export const FEATURED_HABITACIONES_LIMIT = 10
+/** Pool a mezclar antes de tomar el top aleatorio (bajo = menos signed URLs). */
+export const FEATURED_HABITACIONES_POOL = 20
 
 export const CONSEJOS_ARRENDADORES = [
   'Pide siempre referencias a otros dueños antes de confirmar.',

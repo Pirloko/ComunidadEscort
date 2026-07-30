@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { Plus, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -9,38 +9,44 @@ import { ErrorState } from '@/components/shared/ErrorState'
 import { CategorySidebar } from '@/features/forum/components/CategorySidebar'
 import { PostCard } from '@/features/forum/components/PostCard'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useCity } from '@/features/cities/context/CityContext'
 import { postService } from '@/services/post.service'
 import type { PostCategory } from '@/types/database'
-import { MessageSquare } from 'lucide-react'
+
+const PAGE_SIZE = 15
 
 export function ForumPage() {
   const { user } = useAuth()
-  const { selectedCityId } = useCity()
   const [category, setCategory] = useState<PostCategory | 'all'>('all')
 
   const { data: counts = {} } = useQuery({
-    queryKey: ['post-counts', selectedCityId],
-    queryFn: () => postService.getCategoryCounts(selectedCityId!),
-    enabled: !!selectedCityId,
+    queryKey: ['post-counts', 'all'],
+    queryFn: () => postService.getCategoryCounts(),
   })
 
   const {
-    data: posts = [],
+    data,
     isLoading,
     isError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     refetch,
-  } = useQuery({
-    queryKey: ['posts', selectedCityId, category],
-    queryFn: async () => {
+  } = useInfiniteQuery({
+    queryKey: ['posts', 'all', category],
+    queryFn: async ({ pageParam }) => {
       const raw = await postService.getPosts({
-        cityId: selectedCityId!,
         category: category === 'all' ? undefined : category,
+        limit: PAGE_SIZE,
+        offset: pageParam,
       })
       return user ? postService.enrichWithLikes(raw, user.id) : raw
     },
-    enabled: !!selectedCityId,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + PAGE_SIZE,
   })
+
+  const posts = data?.pages.flat() ?? []
 
   return (
     <div className="space-y-6">
@@ -48,7 +54,8 @@ export function ForumPage() {
         <div>
           <h1 className="page-title">Foro comunitario</h1>
           <p className="text-muted-foreground">
-            Comparte experiencias, consejos y aprende junto a otras profesionales.
+            Publicaciones de todas las ciudades. Comparte experiencias, consejos y aprende junto a
+            otras profesionales.
           </p>
         </div>
         <Link to="/forum/new">
@@ -82,7 +89,7 @@ export function ForumPage() {
               title="Sin publicaciones"
               description={
                 category === 'all'
-                  ? 'Sé la primera en publicar en esta ciudad.'
+                  ? 'Sé la primera en publicar en el foro.'
                   : 'No hay publicaciones en esta categoría aún.'
               }
               action={
@@ -96,6 +103,18 @@ export function ForumPage() {
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
+
+          {hasNextPage && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full"
+              disabled={isFetchingNextPage}
+              onClick={() => void fetchNextPage()}
+            >
+              {isFetchingNextPage ? 'Cargando…' : 'Cargar más publicaciones'}
+            </Button>
+          )}
         </div>
       </div>
     </div>

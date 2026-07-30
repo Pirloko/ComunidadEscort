@@ -19,14 +19,20 @@ const ALERT_SELECT = `
 
 async function signMedia(media: AlertMedia[] | null | undefined): Promise<AlertMedia[]> {
   if (!media?.length) return []
-  const out: AlertMedia[] = []
-  for (const item of media) {
-    const { data } = await supabase.storage
-      .from(MEDIA_BUCKET)
-      .createSignedUrl(item.storage_path, SIGNED_URL_TTL_SEC)
-    out.push({ ...item, url: data?.signedUrl })
+
+  const paths = media.map((item) => item.storage_path)
+  const { data } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .createSignedUrls(paths, SIGNED_URL_TTL_SEC)
+
+  const urlByPath = new Map<string, string>()
+  for (const row of data ?? []) {
+    if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
   }
-  return out.sort((a, b) => a.sort_order - b.sort_order)
+
+  return media
+    .map((item) => ({ ...item, url: urlByPath.get(item.storage_path) }))
+    .sort((a, b) => a.sort_order - b.sort_order)
 }
 
 async function enrichAlert(alert: Alert): Promise<Alert> {
@@ -58,6 +64,7 @@ export const alertService = {
     /** Busca por número de cliente (parcial; ignora espacios/símbolos) */
     clientPhone?: string
     limit?: number
+    offset?: number
   }): Promise<Alert[]> {
     let query = supabase
       .from('alerts')
@@ -70,14 +77,18 @@ export const alertService = {
     if (params.search?.trim()) {
       query = query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`)
     }
-    if (params.limit) query = query.limit(params.limit)
+
+    const phoneDigits = params.clientPhone?.replace(/[^\d]/g, '') ?? ''
+    // Búsqueda por teléfono necesita más filas; listado normal queda acotado
+    const limit = params.limit ?? (phoneDigits.length >= 4 ? 150 : 20)
+    const offset = params.offset ?? 0
+    query = query.range(offset, offset + limit - 1)
 
     const { data, error } = await query
     if (error) throw error
     let rows = (data ?? []) as unknown as Alert[]
 
     // Filtrar por dígitos (ignora espacios/+56 en lo guardado y en lo buscado)
-    const phoneDigits = params.clientPhone?.replace(/[^\d]/g, '') ?? ''
     if (phoneDigits.length >= 4) {
       rows = rows.filter((a) => {
         const stored = (a.client_number ?? '').replace(/[^\d]/g, '')

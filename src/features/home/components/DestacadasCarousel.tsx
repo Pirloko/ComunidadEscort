@@ -1,0 +1,188 @@
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  HabitacionPhotoSeal,
+  habitacionCoverUrl,
+  HABITACION_DEFAULT_COVER,
+} from '@/features/home/components/HabitacionPhotoSeal'
+import { FEATURED_HABITACIONES_LIMIT } from '@/lib/habitaciones'
+import { cn } from '@/lib/utils'
+import { resourceService } from '@/services/resource.service'
+import type { Resource } from '@/types/resources'
+
+function DestacadaSlide({ habitacion }: { habitacion: Resource }) {
+  const photo = habitacionCoverUrl(habitacion.photos)
+  const isDefaultCover = photo === HABITACION_DEFAULT_COVER
+  const detailTo = `/home/habitaciones/${habitacion.id}`
+
+  return (
+    <article className="destacadas-slide group relative shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-card/90 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.85)]">
+      <Link to={detailTo} className="block">
+        <div className="relative aspect-[3/4] min-h-[22rem] overflow-hidden bg-muted sm:min-h-[26rem]">
+          <img
+            src={photo}
+            alt={habitacion.name}
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+            loading="lazy"
+            draggable={false}
+          />
+          {!isDefaultCover && <HabitacionPhotoSeal />}
+          <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+          {habitacion.city && (
+            <span className="absolute left-3 top-3 z-[3] inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md">
+              <MapPin className="h-3.5 w-3.5" />
+              {habitacion.city.name}
+            </span>
+          )}
+          <div className="absolute inset-x-0 bottom-0 z-[3] space-y-1.5 p-5">
+            <h3 className="home-display text-[clamp(1.35rem,5vw,1.75rem)] font-semibold leading-tight text-white drop-shadow">
+              {habitacion.name}
+            </h3>
+            <p className="text-sm font-medium text-white/75">Ver detalle →</p>
+          </div>
+        </div>
+      </Link>
+    </article>
+  )
+}
+
+export function DestacadasCarousel() {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState(0)
+  const [canPrev, setCanPrev] = useState(false)
+  const [canNext, setCanNext] = useState(false)
+
+  const { data: featured = [], isLoading } = useQuery({
+    queryKey: ['public-habitaciones-featured'],
+    queryFn: () => resourceService.getFeaturedPublicHabitaciones(FEATURED_HABITACIONES_LIMIT),
+    staleTime: 1000 * 60 * 5,
+  })
+
+  const updateScrollState = () => {
+    const el = trackRef.current
+    if (!el) return
+    const maxScroll = el.scrollWidth - el.clientWidth
+    setCanPrev(el.scrollLeft > 8)
+    setCanNext(el.scrollLeft < maxScroll - 8)
+
+    const slides = Array.from(el.querySelectorAll<HTMLElement>('[data-destacada-slide]'))
+    if (slides.length === 0) return
+    const center = el.scrollLeft + el.clientWidth / 2
+    let best = 0
+    let bestDist = Infinity
+    slides.forEach((slide, i) => {
+      const mid = slide.offsetLeft + slide.offsetWidth / 2
+      const dist = Math.abs(mid - center)
+      if (dist < bestDist) {
+        bestDist = dist
+        best = i
+      }
+    })
+    setActive(best)
+  }
+
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    updateScrollState()
+    el.addEventListener('scroll', updateScrollState, { passive: true })
+    window.addEventListener('resize', updateScrollState)
+    return () => {
+      el.removeEventListener('scroll', updateScrollState)
+      window.removeEventListener('resize', updateScrollState)
+    }
+  }, [featured.length])
+
+  const scrollBySlide = (dir: -1 | 1) => {
+    const el = trackRef.current
+    if (!el) return
+    const slide = el.querySelector<HTMLElement>('[data-destacada-slide]')
+    const amount = slide ? slide.offsetWidth + 14 : el.clientWidth * 0.8
+    el.scrollBy({ left: dir * amount, behavior: 'smooth' })
+  }
+
+  if (!isLoading && featured.length === 0) return null
+
+  return (
+    <section className="destacadas-section space-y-4" aria-labelledby="destacadas-title">
+      <div className="flex items-end justify-between gap-3">
+        <h2 id="destacadas-title" className="destacadas-title home-display">
+          Destacadas
+        </h2>
+        {featured.length > 1 && (
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => scrollBySlide(-1)}
+              disabled={!canPrev}
+              aria-label="Anterior"
+              className="destacadas-nav-btn"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollBySlide(1)}
+              disabled={!canNext}
+              aria-label="Siguiente"
+              className="destacadas-nav-btn"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="flex gap-3 overflow-hidden">
+          <Skeleton className="h-[22rem] w-[92%] shrink-0 rounded-2xl sm:h-[26rem]" />
+          <Skeleton className="h-[22rem] w-[92%] shrink-0 rounded-2xl sm:h-[26rem]" />
+        </div>
+      ) : (
+        <>
+          <div
+            ref={trackRef}
+            className="destacadas-track -mx-3 flex gap-3.5 overflow-x-auto px-3 pb-2 pt-1"
+          >
+            {featured.map((h, i) => (
+              <div
+                key={h.id}
+                data-destacada-slide
+                className={cn(
+                  'destacadas-slide-wrap',
+                  i === active && 'destacadas-slide-wrap-active',
+                )}
+              >
+                <DestacadaSlide habitacion={h} />
+              </div>
+            ))}
+          </div>
+
+          {featured.length > 1 && (
+            <div className="flex justify-center gap-1.5" aria-hidden>
+              {featured.map((h, i) => (
+                <button
+                  key={h.id}
+                  type="button"
+                  className={cn(
+                    'h-1.5 rounded-full transition-all duration-300',
+                    i === active ? 'w-6 bg-accent' : 'w-1.5 bg-white/25',
+                  )}
+                  onClick={() => {
+                    const el = trackRef.current
+                    const slide = el?.querySelectorAll<HTMLElement>('[data-destacada-slide]')[i]
+                    slide?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+                  }}
+                  aria-label={`Ir a destacada ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  )
+}

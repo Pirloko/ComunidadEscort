@@ -3,70 +3,34 @@ import type { AdminStats } from '@/types/admin'
 
 export const adminService = {
   async getStats(): Promise<AdminStats> {
-    const [
-      totalUsers,
-      activeUsers,
-      pendingUsers,
-      moderators,
-      totalCities,
-      activeCities,
-      totalHabitaciones,
-      activeHabitaciones,
-      pendingAlerts,
-    ] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('account_status', 'pendiente'),
-      supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .in('role', ['moderator', 'admin']),
-      supabase.from('cities').select('*', { count: 'exact', head: true }),
-      supabase.from('cities').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase
-        .from('resources')
-        .select('*', { count: 'exact', head: true })
-        .eq('category', 'habitaciones_escort')
-        .eq('status', 'aprobada'),
-      supabase
-        .from('resources')
-        .select('*', { count: 'exact', head: true })
-        .eq('category', 'habitaciones_escort')
-        .eq('status', 'aprobada')
-        .eq('is_active', true),
-      supabase
-        .from('alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pendiente'),
-    ])
+    const { data, error } = await supabase.rpc('get_admin_stats')
+    if (error) throw error
 
-    const errors = [
-      totalUsers.error,
-      activeUsers.error,
-      pendingUsers.error,
-      moderators.error,
-      totalCities.error,
-      activeCities.error,
-      totalHabitaciones.error,
-      activeHabitaciones.error,
-      pendingAlerts.error,
-    ].filter(Boolean)
-
-    if (errors.length) throw errors[0]
+    const row = Array.isArray(data) ? data[0] : data
+    if (!row) {
+      return {
+        totalUsers: 0,
+        activeUsers: 0,
+        pendingUsers: 0,
+        moderators: 0,
+        totalCities: 0,
+        activeCities: 0,
+        totalHabitaciones: 0,
+        activeHabitaciones: 0,
+        pendingAlerts: 0,
+      }
+    }
 
     return {
-      totalUsers: totalUsers.count ?? 0,
-      activeUsers: activeUsers.count ?? 0,
-      pendingUsers: pendingUsers.count ?? 0,
-      moderators: moderators.count ?? 0,
-      totalCities: totalCities.count ?? 0,
-      activeCities: activeCities.count ?? 0,
-      totalHabitaciones: totalHabitaciones.count ?? 0,
-      activeHabitaciones: activeHabitaciones.count ?? 0,
-      pendingAlerts: pendingAlerts.count ?? 0,
+      totalUsers: Number(row.total_users ?? 0),
+      activeUsers: Number(row.active_users ?? 0),
+      pendingUsers: Number(row.pending_users ?? 0),
+      moderators: Number(row.moderators ?? 0),
+      totalCities: Number(row.total_cities ?? 0),
+      activeCities: Number(row.active_cities ?? 0),
+      totalHabitaciones: Number(row.total_habitaciones ?? 0),
+      activeHabitaciones: Number(row.active_habitaciones ?? 0),
+      pendingAlerts: Number(row.pending_alerts ?? 0),
     }
   },
 

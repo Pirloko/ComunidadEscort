@@ -5,6 +5,10 @@ import {
   type HabitacionCsvCity,
   type HabitacionCsvParseError,
 } from '@/lib/habitacion-csv-import'
+import {
+  FEATURED_HABITACIONES_LIMIT,
+  FEATURED_HABITACIONES_POOL,
+} from '@/lib/habitaciones'
 import type { ResourceCategory } from '@/types/database'
 import type {
   CreateResourceInput,
@@ -52,6 +56,18 @@ const PUBLIC_HABITACION_SELECT = `
   photos:resource_photos(id, resource_id, url, sort_order, created_at)
 `
 
+/** Listado/cards: sin video ni campos de moderación; solo cover (1ª foto). */
+const PUBLIC_HABITACION_CARD_SELECT = `
+  id, city_id, category, status, name,
+  phone, address, whatsapp_phone, contact_phone,
+  rating_avg, reviews_count, is_verified, is_active, is_public,
+  recibe_mujer, recibe_hombre, recibe_trans, pide_reserva,
+  acepta_parejas, tiene_wifi, tiene_bano_privado,
+  created_at, updated_at,
+  city:cities!city_id(id, name, slug),
+  photos:resource_photos(id, resource_id, url, sort_order, created_at).order(sort_order.asc).limit(1)
+`
+
 const PHOTOS_BUCKET = 'resource-photos'
 const VIDEOS_BUCKET = 'resource-videos'
 const MAX_PHOTO_SIZE = 8 * 1024 * 1024 // antes de convertir a WebP
@@ -97,20 +113,35 @@ function storagePathFromUrl(url: string, bucket = PHOTOS_BUCKET): string | null 
 async function resolvePhotoUrls(photos: ResourcePhoto[] | undefined): Promise<ResourcePhoto[] | undefined> {
   if (!photos?.length) return photos
 
-  const resolved = await Promise.all(
-    photos.map(async (photo) => {
-      const path = storagePathFromUrl(photo.url)
+  const withPaths = photos.map((photo) => ({
+    photo,
+    path: storagePathFromUrl(photo.url),
+  }))
+
+  const paths = [
+    ...new Set(withPaths.map((p) => p.path).filter((p): p is string => !!p)),
+  ]
+  if (paths.length === 0) return []
+
+  const { data, error } = await supabase.storage
+    .from(PHOTOS_BUCKET)
+    .createSignedUrls(paths, SIGNED_URL_TTL_SEC)
+
+  if (error || !data) return []
+
+  const urlByPath = new Map<string, string>()
+  for (const row of data) {
+    if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
+  }
+
+  return withPaths
+    .map(({ photo, path }) => {
       if (!path) return null
-
-      const { data, error } = await supabase.storage
-        .from(PHOTOS_BUCKET)
-        .createSignedUrl(path, SIGNED_URL_TTL_SEC)
-
-      if (error || !data?.signedUrl) return null
-      return { ...photo, url: data.signedUrl }
-    }),
-  )
-  return resolved.filter((p): p is ResourcePhoto => p !== null)
+      const signedUrl = urlByPath.get(path)
+      if (!signedUrl) return null
+      return { ...photo, url: signedUrl }
+    })
+    .filter((p): p is ResourcePhoto => p !== null)
 }
 
 async function resolveVideoUrl(videoUrl: string | null | undefined): Promise<string | null> {
@@ -150,17 +181,39 @@ async function withSignedPhotos(resource: Resource): Promise<Resource> {
   return sorted
 }
 
-/** Listado: solo firma la cover (1ª foto). No firma video. */
+/** Listado: firma covers en un solo batch de Storage (no 1 request por casa). */
 async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
-  return Promise.all(
-    resources.map(async (resource) => {
-      const sorted = sortPhotos({ ...resource, photos: resource.photos ? [...resource.photos] : [] })
-      const cover = sorted.photos?.slice(0, 1) ?? []
-      sorted.photos = await resolvePhotoUrls(cover)
-      sorted.video_url = null
-      return sorted
-    }),
-  )
+  const prepared = resources.map((resource) => {
+    const sorted = sortPhotos({
+      ...resource,
+      photos: resource.photos ? [...resource.photos] : [],
+    })
+    const cover = sorted.photos?.[0] ?? null
+    const path = cover ? storagePathFromUrl(cover.url) : null
+    return { resource: sorted, cover, path }
+  })
+
+  const paths = [...new Set(prepared.map((p) => p.path).filter((p): p is string => !!p))]
+  const urlByPath = new Map<string, string>()
+
+  if (paths.length > 0) {
+    const { data } = await supabase.storage
+      .from(PHOTOS_BUCKET)
+      .createSignedUrls(paths, SIGNED_URL_TTL_SEC)
+    for (const row of data ?? []) {
+      if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
+    }
+  }
+
+  return prepared.map(({ resource, cover, path }) => {
+    if (cover && path && urlByPath.has(path)) {
+      resource.photos = [{ ...cover, url: urlByPath.get(path)! }]
+    } else {
+      resource.photos = []
+    }
+    resource.video_url = null
+    return resource
+  })
 }
 
 /** Mezcla Fisher–Yates — orden aleatorio en cada carga de /home. */
@@ -211,7 +264,10 @@ export const resourceService = {
     category?: ResourceCategory
     search?: string
     limit?: number
+    offset?: number
   }): Promise<Resource[]> {
+    const limit = params.limit ?? DEFAULT_PUBLIC_LIST_LIMIT
+    const offset = params.offset ?? 0
     let query = supabase
       .from('resources')
       .select(RESOURCE_SELECT)
@@ -219,6 +275,7 @@ export const resourceService = {
       .eq('is_active', true)
       .order('is_verified', { ascending: false })
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (params.cityId) query = query.eq('city_id', params.cityId)
     if (params.category) query = query.eq('category', params.category)
@@ -226,11 +283,49 @@ export const resourceService = {
       const q = escapeIlike(params.search)
       if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`)
     }
-    if (params.limit) query = query.limit(params.limit)
 
     const { data, error } = await query
     if (error) throw error
-    return withSignedPhotosList((data ?? []) as unknown as Resource[])
+    // Cards solo necesitan cover — evita N×M createSignedUrl
+    return withSignedCovers((data ?? []) as unknown as Resource[])
+  },
+
+  async getResourcesPage(params: {
+    cityId?: string
+    cityIds?: string[]
+    category?: ResourceCategory
+    search?: string
+    limit?: number
+    offset?: number
+  }): Promise<{ items: Resource[]; total: number }> {
+    const limit = params.limit ?? DEFAULT_PUBLIC_LIST_LIMIT
+    const offset = params.offset ?? 0
+
+    if (params.cityIds && params.cityIds.length === 0) {
+      return { items: [], total: 0 }
+    }
+
+    let query = supabase
+      .from('resources')
+      .select(RESOURCE_SELECT, { count: 'exact' })
+      .eq('status', 'aprobada')
+      .eq('is_active', true)
+      .order('is_verified', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (params.cityId) query = query.eq('city_id', params.cityId)
+    else if (params.cityIds?.length) query = query.in('city_id', params.cityIds)
+    if (params.category) query = query.eq('category', params.category)
+    if (params.search?.trim()) {
+      const q = escapeIlike(params.search)
+      if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`)
+    }
+
+    const { data, error, count } = await query
+    if (error) throw error
+    const items = await withSignedCovers((data ?? []) as unknown as Resource[])
+    return { items, total: count ?? 0 }
   },
 
   async getPublicHabitacionCities(): Promise<
@@ -249,7 +344,7 @@ export const resourceService = {
       )
     }
 
-    // Fallback si el RPC aún no está aplicado en el proyecto
+    // Fallback acotado si el RPC aún no está aplicado (evita cargar la tabla entera)
     const { data: rows, error: fallbackError } = await supabase
       .from('resources')
       .select('city_id, city:cities!city_id(id, name, slug)')
@@ -257,6 +352,7 @@ export const resourceService = {
       .eq('is_public', true)
       .eq('is_active', true)
       .eq('status', 'aprobada')
+      .limit(800)
 
     if (fallbackError) throw fallbackError
 
@@ -282,7 +378,7 @@ export const resourceService = {
 
     let query = supabase
       .from('resources')
-      .select(PUBLIC_HABITACION_SELECT)
+      .select(PUBLIC_HABITACION_CARD_SELECT)
       .eq('category', 'habitaciones_escort')
       .eq('is_public', true)
       .eq('is_active', true)
@@ -304,8 +400,30 @@ export const resourceService = {
 
     const { data, error } = await query
     if (error) throw error
+    return withSignedCovers((data ?? []) as unknown as Resource[])
+  },
+
+  /**
+   * Top N públicas al azar para el carrusel Destacadas (/home).
+   * Cada llamada remueve el orden (nueva visita / refetch).
+   */
+  async getFeaturedPublicHabitaciones(
+    limit = FEATURED_HABITACIONES_LIMIT,
+  ): Promise<Resource[]> {
+    const pool = Math.max(limit, FEATURED_HABITACIONES_POOL)
+    const { data, error } = await supabase
+      .from('resources')
+      .select(PUBLIC_HABITACION_CARD_SELECT)
+      .eq('category', 'habitaciones_escort')
+      .eq('is_public', true)
+      .eq('is_active', true)
+      .eq('status', 'aprobada')
+      .order('created_at', { ascending: false })
+      .limit(pool)
+
+    if (error) throw error
     const signed = await withSignedCovers((data ?? []) as unknown as Resource[])
-    return shuffleArray(signed)
+    return shuffleArray(signed).slice(0, limit)
   },
 
   async getPublicHabitacionById(resourceId: string): Promise<Resource | null> {
@@ -321,6 +439,25 @@ export const resourceService = {
 
     if (error) throw error
     return data ? withSignedPhotos(data as unknown as Resource) : null
+  },
+
+  /** Favoritas del perfil — mantiene orden de ids y firma covers. */
+  async getHabitacionesByIds(ids: string[]): Promise<Resource[]> {
+    if (!ids.length) return []
+
+    const { data, error } = await supabase
+      .from('resources')
+      .select(PUBLIC_HABITACION_CARD_SELECT)
+      .in('id', ids)
+      .eq('category', 'habitaciones_escort')
+      .eq('status', 'aprobada')
+      .eq('is_active', true)
+
+    if (error) throw error
+
+    const signed = await withSignedCovers((data ?? []) as unknown as Resource[])
+    const byId = new Map(signed.map((r) => [r.id, r]))
+    return ids.map((id) => byId.get(id)).filter((r): r is Resource => !!r)
   },
 
   async getResourceById(resourceId: string): Promise<Resource | null> {
@@ -549,29 +686,70 @@ export const resourceService = {
   async getHabitacionesForAdmin(params?: {
     search?: string
     cityId?: string
-    /** Si false, solo activas. Default: todas (activas + pausadas). */
+    /** Si true, solo activas. */
     onlyActive?: boolean
+    /** Si true, solo pausadas. */
+    onlyPaused?: boolean
+    /** Ciudades para resolver búsqueda por nombre de ciudad. */
+    cities?: Array<{ id: string; name: string }>
+    page?: number
+    pageSize?: number
     limit?: number
-  }): Promise<Resource[]> {
+  }): Promise<{ items: Resource[]; total: number }> {
+    const pageSize = params?.pageSize ?? params?.limit ?? 10
+    const page = Math.max(1, params?.page ?? 1)
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+
     let query = supabase
       .from('resources')
-      .select(RESOURCE_SELECT)
+      .select(RESOURCE_SELECT, { count: 'exact' })
       .eq('category', 'habitaciones_escort')
       .eq('status', 'aprobada')
       .order('is_active', { ascending: false })
       .order('created_at', { ascending: false })
+      .range(from, to)
 
     if (params?.onlyActive) query = query.eq('is_active', true)
+    if (params?.onlyPaused) query = query.eq('is_active', false)
     if (params?.cityId) query = query.eq('city_id', params.cityId)
-    if (params?.search?.trim()) {
-      const q = escapeIlike(params.search)
-      if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`)
-    }
-    if (params?.limit) query = query.limit(params.limit)
 
-    const { data, error } = await query
+    if (params?.search?.trim()) {
+      const raw = params.search.trim()
+      const q = escapeIlike(raw)
+      const digits = raw.replace(/\D/g, '')
+      const cityIds =
+        params.cities
+          ?.filter((c) => c.name.toLowerCase().includes(raw.toLowerCase()))
+          .map((c) => c.id) ?? []
+
+      if (q) {
+        const parts = [
+          `name.ilike.%${q}%`,
+          `description.ilike.%${q}%`,
+          `address.ilike.%${q}%`,
+          `whatsapp_phone.ilike.%${q}%`,
+          `contact_phone.ilike.%${q}%`,
+          `phone.ilike.%${q}%`,
+        ]
+        if (digits.length >= 4) {
+          parts.push(`whatsapp_phone.ilike.%${digits}%`)
+          parts.push(`contact_phone.ilike.%${digits}%`)
+          parts.push(`phone.ilike.%${digits}%`)
+        }
+        if (cityIds.length > 0) {
+          parts.push(`city_id.in.(${cityIds.join(',')})`)
+        }
+        query = query.or(parts.join(','))
+      }
+    }
+
+    const { data, error, count } = await query
     if (error) throw error
-    return withSignedPhotosList((data ?? []) as unknown as Resource[])
+    return {
+      items: await withSignedPhotosList((data ?? []) as unknown as Resource[]),
+      total: count ?? 0,
+    }
   },
 
   async uploadResourcePhoto(

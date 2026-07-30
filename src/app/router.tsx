@@ -174,6 +174,21 @@ const HabitacionPublicDetailPage = lazy(() =>
     default: m.HabitacionPublicDetailPage,
   })),
 )
+const HabitacionesCityPage = lazy(() =>
+  import('@/features/home/pages/HabitacionesCityPage').then((m) => ({
+    default: m.HabitacionesCityPage,
+  })),
+)
+const PiezasEscortCityRedirect = lazy(() =>
+  import('@/features/home/pages/HabitacionesCityPage').then((m) => ({
+    default: m.PiezasEscortCityRedirect,
+  })),
+)
+const LegacyEscortCityRedirect = lazy(() =>
+  import('@/features/home/pages/HabitacionesCityPage').then((m) => ({
+    default: m.LegacyEscortCityRedirect,
+  })),
+)
 
 export function AppRouter() {
   return (
@@ -183,6 +198,22 @@ export function AppRouter() {
       <Route
         path="/home/habitaciones/:habitacionId"
         element={<S><HabitacionPublicDetailPage /></S>}
+      />
+      <Route
+        path="/habitaciones-escort/:citySlug"
+        element={<S><HabitacionesCityPage /></S>}
+      />
+      <Route
+        path="/piezas-escort/:citySlug"
+        element={<S><PiezasEscortCityRedirect /></S>}
+      />
+      <Route
+        path="/alcobas-escort/:citySlug"
+        element={<S><PiezasEscortCityRedirect /></S>}
+      />
+      <Route
+        path="/alcoba-escort/:citySlug"
+        element={<S><PiezasEscortCityRedirect /></S>}
       />
 
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
@@ -287,6 +318,11 @@ export function AppRouter() {
         </Route>
       </Route>
 
+      {/* Legacy: /habitaciones-escort-puerto-montt → /habitaciones-escort/puerto-montt */}
+      <Route
+        path="/:seoCityPage"
+        element={<S><LegacyEscortCityRedirect /></S>}
+      />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   )

@@ -44,6 +44,7 @@ export function useBookmarks() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
       queryClient.invalidateQueries({ queryKey: ['bookmarks-page'] })
+      queryClient.invalidateQueries({ queryKey: ['bookmarks-habitaciones'] })
     },
   })
 

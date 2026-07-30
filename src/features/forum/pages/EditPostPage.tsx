@@ -5,14 +5,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/shared/ErrorState'
 import { PostForm } from '@/features/forum/components/PostForm'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { useCity } from '@/features/cities/context/CityContext'
 import { postService } from '@/services/post.service'
 
 export function EditPostPage() {
   const { postId } = useParams<{ postId: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { selectedCityId } = useCity()
 
   const { data: post, isLoading, isError } = useQuery({
     queryKey: ['post', postId],
@@ -33,7 +31,7 @@ export function EditPostPage() {
         </CardHeader>
         <CardContent>
           <PostForm
-            cityId={selectedCityId!}
+            cityId={post.city_id}
             authorId={user!.id}
             initialData={post}
             onSuccess={(updated) => navigate(`/forum/${updated.id}`)}

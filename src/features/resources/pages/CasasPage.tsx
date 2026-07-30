@@ -1,22 +1,23 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Home, MapPin, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Home, MapPin, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ErrorState } from '@/components/shared/ErrorState'
-import { StarRating } from '@/components/shared/StarRating'
+import { HabitacionCard } from '@/features/home/components/HabitacionCard'
 import { useCity } from '@/features/cities/context/CityContext'
+import { CASAS_PAGE_SIZE } from '@/lib/habitaciones'
 import { resourceService } from '@/services/resource.service'
-import { cn } from '@/lib/utils'
+import '@/features/home/home-landing.css'
 
 export function CasasPage() {
   const { cities } = useCity()
-  /** Por defecto: todas las ciudades (no la del perfil / selector global) */
   const [cityId, setCityId] = useState('')
   const [citySearch, setCitySearch] = useState('')
+  const [page, setPage] = useState(1)
+  const listRef = useRef<HTMLElement>(null)
 
   const cityQuery = citySearch.trim().toLowerCase()
 
@@ -25,43 +26,61 @@ export function CasasPage() {
     return cities.filter((c) => c.name.toLowerCase().includes(cityQuery))
   }, [cities, cityQuery])
 
-  const { data: allHabitaciones = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ['casas-habitaciones', cityId || 'all'],
+  const cityIdsFilter = useMemo(() => {
+    if (cityId) return undefined
+    if (!cityQuery) return undefined
+    return filteredCities.map((c) => c.id)
+  }, [cityId, cityQuery, filteredCities])
+
+  useEffect(() => {
+    setPage(1)
+  }, [cityId, cityQuery])
+
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
+    queryKey: ['casas-habitaciones', cityId || 'all', cityQuery, page],
     queryFn: () =>
-      resourceService.getResources({
+      resourceService.getResourcesPage({
         cityId: cityId || undefined,
+        cityIds: cityIdsFilter,
         category: 'habitaciones_escort',
+        limit: CASAS_PAGE_SIZE,
+        offset: (page - 1) * CASAS_PAGE_SIZE,
       }),
+    placeholderData: (prev) => prev,
   })
 
-  const habitaciones = useMemo(() => {
-    if (cityId || !cityQuery) return allHabitaciones
-    return allHabitaciones.filter((h) =>
-      (h.city?.name ?? '').toLowerCase().includes(cityQuery),
-    )
-  }, [allHabitaciones, cityId, cityQuery])
+  const habitaciones = data?.items ?? []
+  const total = data?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / CASAS_PAGE_SIZE))
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  const goToPage = (next: number) => {
+    setPage(next)
+    listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
-    <div className="mx-auto max-w-lg space-y-5">
+    <div className="mx-auto max-w-lg space-y-5 pb-2">
       <div>
         <h1 className="page-title flex items-center gap-2">
           <Home className="h-6 w-6 text-primary" />
           Casas y habitaciones
         </h1>
         <p className="page-subtitle mt-1.5">
-          Filtra por ciudad, revisa el hospedaje y deja tu reseña. Solo visible para
-          miembros de la comunidad.
+          Filtra por ciudad, guarda favoritas y deja tu reseña. Solo para miembros de la comunidad.
         </p>
       </div>
 
-      <div className="space-y-3 rounded-xl border bg-card p-3">
+      <div className="space-y-3 rounded-xl border bg-card/90 p-3 backdrop-blur-sm">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={citySearch}
             onChange={(e) => {
               setCitySearch(e.target.value)
-              // Al buscar por texto, volver a “Todas” para no mezclar filtros
               if (cityId) setCityId('')
             }}
             placeholder="Buscar ciudad…"
@@ -80,7 +99,7 @@ export function CasasPage() {
               type="button"
               size="sm"
               variant={cityId === '' && !cityQuery ? 'accent' : 'outline'}
-              className="shrink-0"
+              className="shrink-0 rounded-lg"
               onClick={() => {
                 setCityId('')
                 setCitySearch('')
@@ -94,7 +113,7 @@ export function CasasPage() {
                 type="button"
                 size="sm"
                 variant={cityId === c.id ? 'accent' : 'outline'}
-                className="shrink-0"
+                className="shrink-0 rounded-lg"
                 onClick={() => {
                   setCityId(c.id === cityId ? '' : c.id)
                   setCitySearch('')
@@ -112,76 +131,92 @@ export function CasasPage() {
         </div>
       </div>
 
-      {isError && (
-        <ErrorState
-          title="No se pudieron cargar las casas"
-          onRetry={() => void refetch()}
-        />
-      )}
+      <section ref={listRef} className="scroll-mt-20 space-y-4" aria-label="Listado de casas">
+        {isError && (
+          <ErrorState
+            title="No se pudieron cargar las casas"
+            onRetry={() => void refetch()}
+          />
+        )}
 
-      {isLoading && (
-        <div className="space-y-3">
-          <Skeleton className="h-28 rounded-xl" />
-          <Skeleton className="h-28 rounded-xl" />
-        </div>
-      )}
+        {(isLoading && habitaciones.length === 0) && (
+          <div className="space-y-4">
+            <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+            <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+          </div>
+        )}
 
-      {!isLoading && !isError && habitaciones.length === 0 && (
-        <EmptyState
-          icon={Home}
-          title="Sin habitaciones"
-          description="No hay casas o habitaciones publicadas con ese filtro."
-        />
-      )}
+        {!isLoading && !isError && habitaciones.length === 0 && (
+          <EmptyState
+            icon={Home}
+            title="Sin habitaciones"
+            description="No hay casas o habitaciones publicadas con ese filtro."
+          />
+        )}
 
-      {!isLoading && habitaciones.length > 0 && (
-        <ul className="space-y-3">
-          {habitaciones.map((h) => (
-            <li key={h.id}>
-              <Link
-                to={`/casas/${h.id}`}
-                className={cn(
-                  'flex gap-3 rounded-xl border bg-card p-3 transition-opacity active:opacity-90',
-                )}
+        {!isError && habitaciones.length > 0 && (
+          <div className={`space-y-4 ${isFetching && !isLoading ? 'opacity-70' : ''}`}>
+            <p className="text-sm text-muted-foreground">
+              Página {page} de {totalPages}
+              {total > 0 ? ` · ${total} publicación${total !== 1 ? 'es' : ''}` : ''}
+            </p>
+            <ul className="space-y-4">
+              {habitaciones.map((h) => (
+                <li key={h.id}>
+                  <HabitacionCard
+                    habitacion={h}
+                    detailTo={`/casas/${h.id}`}
+                    showFavorite
+                  />
+                </li>
+              ))}
+            </ul>
+            {totalPages > 1 && (
+              <nav
+                className="habitacion-pagination flex flex-wrap items-center justify-center gap-1.5 pt-2"
+                aria-label="Paginación del listado"
               >
-                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
-                  {h.photos?.[0]?.url ? (
-                    <img
-                      src={h.photos[0].url}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground">
-                      Sin foto
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold leading-snug">{h.name}</p>
-                  {h.city && (
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      {h.city.name}
-                    </p>
-                  )}
-                  {h.reviews_count > 0 ? (
-                    <div className="mt-1.5 flex items-center gap-1.5">
-                      <StarRating value={h.rating_avg ?? 0} size="sm" />
-                      <span className="text-xs text-muted-foreground">
-                        {h.rating_avg} ({h.reviews_count})
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="mt-1.5 text-xs text-muted-foreground">Sin reseñas aún</p>
-                  )}
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="habitacion-page-btn"
+                  disabled={page <= 1}
+                  onClick={() => goToPage(page - 1)}
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <Button
+                    key={p}
+                    type="button"
+                    size="sm"
+                    variant={p === page ? 'accent' : 'outline'}
+                    className="habitacion-page-btn min-w-9"
+                    onClick={() => goToPage(p)}
+                    aria-label={`Página ${p}`}
+                    aria-current={p === page ? 'page' : undefined}
+                  >
+                    {p}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="habitacion-page-btn"
+                  disabled={page >= totalPages}
+                  onClick={() => goToPage(page + 1)}
+                  aria-label="Página siguiente"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </nav>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

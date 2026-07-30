@@ -18,7 +18,7 @@ const RESOURCE_REVIEW_SELECT = `
 const RESOURCE_REVIEW_FEED_SELECT = `
   id, resource_id, author_id, rating, body, service_notes, owner_notes, created_at,
   author:profiles!author_id(id, alias, avatar_url),
-  resource:resources!resource_id(
+  resource:resources!inner(
     id, name, category,
     city:cities!city_id(id, name, slug)
   )
@@ -28,14 +28,20 @@ async function signReviewPhotos(
   photos: ResourceReviewPhoto[] | null | undefined,
 ): Promise<ResourceReviewPhoto[]> {
   if (!photos?.length) return []
-  const signed: ResourceReviewPhoto[] = []
-  for (const photo of photos) {
-    const { data } = await supabase.storage
-      .from(REVIEW_PHOTOS_BUCKET)
-      .createSignedUrl(photo.storage_path, SIGNED_URL_TTL_SEC)
-    signed.push({ ...photo, url: data?.signedUrl })
+
+  const paths = photos.map((photo) => photo.storage_path)
+  const { data } = await supabase.storage
+    .from(REVIEW_PHOTOS_BUCKET)
+    .createSignedUrls(paths, SIGNED_URL_TTL_SEC)
+
+  const urlByPath = new Map<string, string>()
+  for (const row of data ?? []) {
+    if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
   }
-  return signed.sort((a, b) => a.sort_order - b.sort_order)
+
+  return photos
+    .map((photo) => ({ ...photo, url: urlByPath.get(photo.storage_path) }))
+    .sort((a, b) => a.sort_order - b.sort_order)
 }
 
 async function enrichReview(review: ResourceReview): Promise<ResourceReview> {
@@ -63,14 +69,12 @@ export const resourceReviewService = {
     const { data, error } = await supabase
       .from('resource_reviews')
       .select(RESOURCE_REVIEW_FEED_SELECT)
+      .eq('resource.category', 'habitaciones_escort')
       .order('created_at', { ascending: false })
-      .limit(Math.max(limit * 3, 30))
+      .limit(limit)
 
     if (error) throw error
-    const rows = ((data ?? []) as unknown as ResourceReview[]).filter(
-      (r) => r.resource?.category === 'habitaciones_escort',
-    )
-    return rows.slice(0, limit)
+    return (data ?? []) as unknown as ResourceReview[]
   },
 
   async upsertReview(

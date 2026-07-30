@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { MessageCircle, Pin } from 'lucide-react'
+import { MessageCircle, MapPin, Pin } from 'lucide-react'
 import { Avatar } from '@/components/shared/Avatar'
 import { CategoryBadge } from '@/components/shared/CategoryBadge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -41,6 +41,12 @@ export function PostCard({ post, compact = false }: PostCardProps) {
                 </Link>
               )}
               <CategoryBadge category={post.category} />
+              {post.city && (
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  {post.city.name}
+                </span>
+              )}
               {post.is_pinned && (
                 <span className="inline-flex items-center gap-1 text-xs text-accent">
                   <Pin className="h-3 w-3" /> Fijado

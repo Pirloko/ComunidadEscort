@@ -16,12 +16,14 @@ interface CityContextValue {
 const CityContext = createContext<CityContextValue | undefined>(undefined)
 
 export function CityProvider({ children }: { children: ReactNode }) {
-  const { profile } = useAuth()
+  const { profile, session } = useAuth()
   const [selectedCityId, setSelectedCityIdState] = useState<string | null>(null)
 
   const { data: cities = [], isLoading } = useQuery({
     queryKey: ['cities'],
     queryFn: () => cityService.getPublicCities(),
+    enabled: !!session,
+    staleTime: 1000 * 60 * 10,
   })
 
   useEffect(() => {

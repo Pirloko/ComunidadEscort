@@ -159,4 +159,16 @@ export const bookmarkService = {
 
     return result
   },
+
+  async getBookmarkedHabitacionIds(userId: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('bookmarks')
+      .select('item_id, created_at')
+      .eq('user_id', userId)
+      .eq('item_type', 'resource')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return (data ?? []).map((b) => b.item_id)
+  },
 }

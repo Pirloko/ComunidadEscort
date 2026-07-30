@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Filter, ShieldAlert, MapPin, Phone } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -10,6 +11,8 @@ import { AlertCard } from '@/features/alerts/components/AlertCard'
 import { useCity } from '@/features/cities/context/CityContext'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { alertService } from '@/services/alert.service'
+
+const PAGE_SIZE = 20
 
 export function AlertsPage() {
   const { profile } = useAuth()
@@ -20,14 +23,31 @@ export function AlertsPage() {
   const phoneDigits = clientPhone.replace(/[^\d]/g, '')
   const phoneSearchActive = phoneDigits.length >= 4
 
-  const { data: alerts = [], isLoading, isError, refetch } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery({
     queryKey: ['alerts', filterCityId, phoneDigits],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       alertService.getApprovedAlerts({
         cityId: filterCityId === 'all' ? undefined : filterCityId,
         clientPhone: phoneSearchActive ? phoneDigits : undefined,
+        limit: phoneSearchActive ? 150 : PAGE_SIZE,
+        offset: phoneSearchActive ? 0 : pageParam,
       }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _pages, lastPageParam) => {
+      if (phoneSearchActive) return undefined
+      return lastPage.length < PAGE_SIZE ? undefined : lastPageParam + PAGE_SIZE
+    },
   })
+
+  const alerts = data?.pages.flat() ?? []
 
   const { data: myPending = [] } = useQuery({
     queryKey: ['my-alerts', profile?.id],
@@ -120,7 +140,8 @@ export function AlertsPage() {
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {alerts.length} resultado{alerts.length !== 1 ? 's' : ''}
+            {alerts.length}
+            {hasNextPage ? '+' : ''} resultado{alerts.length !== 1 ? 's' : ''}
           </p>
         )}
       </div>
@@ -153,6 +174,18 @@ export function AlertsPage() {
           <AlertCard key={alert.id} alert={alert} />
         ))}
       </div>
+
+      {hasNextPage && (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full"
+          disabled={isFetchingNextPage}
+          onClick={() => void fetchNextPage()}
+        >
+          {isFetchingNextPage ? 'Cargando…' : 'Cargar más reportes'}
+        </Button>
+      )}
     </div>
   )
 }

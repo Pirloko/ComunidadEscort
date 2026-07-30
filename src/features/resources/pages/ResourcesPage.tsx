@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Plus, Search } from 'lucide-react'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { Plus, Search, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -13,7 +13,8 @@ import { useCity } from '@/features/cities/context/CityContext'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { resourceService } from '@/services/resource.service'
 import type { ResourceCategory } from '@/types/database'
-import { BookOpen } from 'lucide-react'
+
+const PAGE_SIZE = 24
 
 export function ResourcesPage() {
   const navigate = useNavigate()
@@ -23,16 +24,31 @@ export function ResourcesPage() {
   const [localSearch, setLocalSearch] = useState('')
   const isMod = profile?.role === 'moderator' || profile?.role === 'admin'
 
-  const { data: resources = [], isLoading, isError, refetch } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery({
     queryKey: ['resources', selectedCityId, category, localSearch],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       resourceService.getResources({
         cityId: selectedCityId!,
         category: category === 'all' ? undefined : category,
         search: localSearch || undefined,
+        limit: PAGE_SIZE,
+        offset: pageParam,
       }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + PAGE_SIZE,
     enabled: !!selectedCityId,
   })
+
+  const resources = data?.pages.flat() ?? []
 
   return (
     <div className="space-y-6">
@@ -69,7 +85,8 @@ export function ResourcesPage() {
         </div>
         <ResourceCategoryChips selected={category} onSelect={setCategory} />
         <p className="text-sm text-muted-foreground">
-          {resources.length} servicio{resources.length !== 1 ? 's' : ''} encontrado
+          {resources.length}
+          {hasNextPage ? '+' : ''} servicio{resources.length !== 1 ? 's' : ''} encontrado
           {resources.length !== 1 ? 's' : ''}
         </p>
       </div>
@@ -108,6 +125,18 @@ export function ResourcesPage() {
           <ResourceCard key={resource.id} resource={resource} />
         ))}
       </div>
+
+      {hasNextPage && (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full"
+          disabled={isFetchingNextPage}
+          onClick={() => void fetchNextPage()}
+        >
+          {isFetchingNextPage ? 'Cargando…' : 'Cargar más datos'}
+        </Button>
+      )}
     </div>
   )
 }

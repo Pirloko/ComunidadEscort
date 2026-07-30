@@ -25,6 +25,7 @@ import {
   whatsappUrl,
 } from '@/lib/habitaciones'
 import { resourceService } from '@/services/resource.service'
+import { habitacionesEscortCityPath } from '@/lib/seo-habitaciones'
 import '@/features/home/home-landing.css'
 
 export function HabitacionPublicDetailPage() {
@@ -102,9 +103,18 @@ export function HabitacionPublicDetailPage() {
       </header>
 
       <main className="relative mx-auto max-w-lg space-y-6 px-4 py-5 pb-10">
-        <Link to="/home" className="habitacion-back-link home-fade-up">
+        <Link
+          to={
+            habitacion.city?.slug
+              ? habitacionesEscortCityPath(habitacion.city.slug)
+              : '/home'
+          }
+          className="habitacion-back-link home-fade-up"
+        >
           <ArrowLeft className="h-4 w-4" />
-          Volver
+          {habitacion.city?.name
+            ? `Habitaciones en ${habitacion.city.name}`
+            : 'Volver al inicio'}
         </Link>
 
         <Card className="habitacion-detail-card home-fade-up home-fade-up-delay-1 overflow-hidden border-0 bg-transparent shadow-none">
