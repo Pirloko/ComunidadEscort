@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
 import { convertImageToWebp } from '@/lib/image-webp'
+import {
+  parseHabitacionesCsv,
+  type HabitacionCsvCity,
+  type HabitacionCsvParseError,
+} from '@/lib/habitacion-csv-import'
 import type { ResourceCategory } from '@/types/database'
 import type {
   CreateResourceInput,
@@ -9,6 +14,12 @@ import type {
   ReviewResourceInput,
   UpdateResourceInput,
 } from '@/types/resources'
+
+export type HabitacionCsvImportResult = {
+  created: number
+  createdNames: string[]
+  errors: HabitacionCsvParseError[]
+}
 
 const RESOURCE_SELECT = `
   id, author_id, city_id, category, status, name, description,
@@ -681,5 +692,41 @@ export const resourceService = {
 
     if (error) throw error
     return withSignedPhotos(data as unknown as Resource)
+  },
+
+  /**
+   * Importa habitaciones desde CSV (plantilla docs/plantilla-import-casas.csv).
+   * Crea fila a fila; errores de parseo/insert no detienen el resto.
+   */
+  async importHabitacionesFromCsv(
+    authorId: string,
+    csvText: string,
+    cities: HabitacionCsvCity[],
+  ): Promise<HabitacionCsvImportResult> {
+    const parsed = parseHabitacionesCsv(csvText, cities)
+    const errors = [...parsed.errors]
+    const createdNames: string[] = []
+
+    for (const row of parsed.rows) {
+      const { rowNumber, ...input } = row
+      try {
+        const created = await resourceService.createResource(authorId, input)
+        createdNames.push(created.name)
+      } catch (err) {
+        errors.push({
+          row: rowNumber,
+          message:
+            err instanceof Error
+              ? `No se pudo crear "${input.name}": ${err.message}`
+              : `No se pudo crear "${input.name}"`,
+        })
+      }
+    }
+
+    return {
+      created: createdNames.length,
+      createdNames,
+      errors,
+    }
   },
 }

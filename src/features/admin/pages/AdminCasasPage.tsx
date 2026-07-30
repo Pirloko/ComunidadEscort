@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { AdminCasaRow } from '@/features/admin/components/AdminCasaRow'
+import { ImportCasasCsvButton } from '@/features/admin/components/ImportCasasCsvButton'
 import { useCity } from '@/features/cities/context/CityContext'
 import { resourceService } from '@/services/resource.service'
 import { cn } from '@/lib/utils'
@@ -44,13 +45,21 @@ export function AdminCasasPage() {
               Crear, editar, pausar o eliminar hospedajes para escort.
             </p>
           </div>
-          <Link
-            to="/admin/casas/new"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
-          >
-            <Plus className="h-4 w-4" />
-            Nueva casa
-          </Link>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <div className="flex flex-wrap gap-2">
+              <ImportCasasCsvButton />
+              <Link
+                to="/admin/casas/new"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
+              >
+                <Plus className="h-4 w-4" />
+                Nueva casa
+              </Link>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              CSV con columnas de la plantilla (sin fotos; súbelas después).
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

@@ -1,0 +1,3 @@
+ciudad;nombre;descripcion;direccion;whatsapp;telefono_llamada;visible_en_home;reglas;recibe_mujer;recibe_hombre;recibe_trans;pide_reserva;pide_referencias;pide_doc_identidad;pide_link_publicacion;acepta_parejas;recibe_agencias;tiene_camaras_seguridad;tiene_wifi;tiene_bano_privado;tiene_extintor
+Temuco;Casa Ejemplo;Casa cerca del centro;Calle Falsa 123;+56912345678;+56987654321;si;Sin fiestas. Entrega de llaves a las 14:00;si;no;no;si;no;no;no;si;no;si;si;si;no
+Puerto Montt;Departamento Ejemplo;Depto amoblado;Av. Costanera 456;+56911223344;;si;No fumar en el interior;si;no;si;no;si;no;no;no;no;no;si;si;si
