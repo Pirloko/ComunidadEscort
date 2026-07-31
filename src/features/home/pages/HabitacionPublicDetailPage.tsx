@@ -86,8 +86,8 @@ export function HabitacionPublicDetailPage() {
       <div className="home-landing-mesh pointer-events-none absolute inset-x-0 top-0 h-[420px]" aria-hidden />
 
       <header className="sticky top-0 z-40 border-b border-white/8 bg-background/75 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-16 sm:px-4">
-          <BrandLogo size="md" to="/home" tone="dark" className="h-10 max-w-[min(100%,180px)] sm:h-12 sm:max-w-[min(100%,220px)]" />
+        <div className="mx-auto flex h-16 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-[4.5rem] sm:px-4">
+          <BrandLogo size="lg" to="/home" tone="dark" className="h-12 max-w-[min(100%,240px)] sm:h-14 sm:max-w-[min(100%,280px)]" />
           <Button
             asChild
             size="sm"

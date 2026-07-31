@@ -12,7 +12,7 @@ export function SafetyTipsSection() {
           <ShieldAlert className="h-4 w-4 text-amber-400" />
         </span>
         <div>
-          <h2 className="home-display text-[clamp(1.35rem,1.15rem+1vw,1.65rem)] font-semibold leading-tight text-foreground">
+          <h2 className="home-display home-section-title home-section-title-warm text-[clamp(1.4rem,1.2rem+1vw,1.75rem)]">
             Consejos para un arriendo seguro
           </h2>
           <p className="page-subtitle mt-2.5 leading-relaxed">

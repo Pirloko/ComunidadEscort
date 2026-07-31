@@ -10,6 +10,7 @@ import {
 import { RoleGuard } from '@/components/shared/RoleGuard'
 import { PageLoader } from '@/components/shared/PageLoader'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import { ANUNCIOS_GUIDE_PATHS } from '@/features/home/data/anuncios-guides'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
@@ -189,6 +190,11 @@ const LegacyEscortCityRedirect = lazy(() =>
     default: m.LegacyEscortCityRedirect,
   })),
 )
+const AnunciosGuidePage = lazy(() =>
+  import('@/features/home/pages/AnunciosGuidePage').then((m) => ({
+    default: m.AnunciosGuidePage,
+  })),
+)
 
 export function AppRouter() {
   return (
@@ -215,6 +221,9 @@ export function AppRouter() {
         path="/alcoba-escort/:citySlug"
         element={<S><PiezasEscortCityRedirect /></S>}
       />
+      {ANUNCIOS_GUIDE_PATHS.map((path) => (
+        <Route key={path} path={`/${path}`} element={<S><AnunciosGuidePage /></S>} />
+      ))}
 
       <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />

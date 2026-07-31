@@ -106,12 +106,12 @@ export function HabitacionesCityPage() {
       <div className="home-landing-mesh absolute inset-x-0 top-0 h-[420px]" aria-hidden />
 
       <header className="sticky top-0 z-40 border-b border-white/5 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-16">
+        <div className="mx-auto flex h-16 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-[4.5rem]">
           <BrandLogo
-            size="md"
+            size="lg"
             to="/home"
             tone="dark"
-            className="h-10 max-w-[min(100%,180px)] sm:h-12 sm:max-w-[min(100%,220px)]"
+            className="h-12 max-w-[min(100%,240px)] sm:h-14 sm:max-w-[min(100%,280px)]"
           />
           <div className="flex shrink-0 items-center gap-1.5">
             {loggedIn && canEnter ? (

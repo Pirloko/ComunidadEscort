@@ -4,13 +4,13 @@ import { useQuery } from '@tanstack/react-query'
 import {
   LogIn,
   LayoutDashboard,
-  MapPin,
   ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BrandLogo } from '@/components/shared/BrandLogo'
 import { DestacadasCarousel } from '@/features/home/components/DestacadasCarousel'
+import { AnunciosGuidesSection } from '@/features/home/components/AnunciosGuidesSection'
 import { SafetyTipsSection } from '@/features/home/components/SafetyTipsSection'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { canAccessCommunity } from '@/lib/account-access'
@@ -46,8 +46,8 @@ export function HomePage() {
       <div className="home-landing-mesh absolute inset-x-0 top-0 h-[420px]" aria-hidden />
 
       <header className="sticky top-0 z-40 border-b border-white/5 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-16">
-          <BrandLogo size="md" to="/home" tone="dark" className="h-10 max-w-[min(100%,180px)] sm:h-12 sm:max-w-[min(100%,220px)]" />
+        <div className="mx-auto flex h-16 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-[4.5rem]">
+          <BrandLogo size="lg" to="/home" tone="dark" className="h-12 max-w-[min(100%,240px)] sm:h-14 sm:max-w-[min(100%,280px)]" />
           <div className="flex shrink-0 items-center gap-1.5">
             {loggedIn && canEnter ? (
               <Button
@@ -86,15 +86,16 @@ export function HomePage() {
         <section id="habitaciones" className="scroll-mt-16 space-y-4">
           <div className="home-cities-intro">
             <p className="home-cities-eyebrow home-fade-up">
-              <span className="home-cities-eyebrow-text">Habitaciones y piezas</span>
+              <span className="home-cities-eyebrow-text">Casas y Habitaciones para escort</span>
             </p>
-            <h1 className="home-display home-cities-title home-fade-up home-fade-up-delay-1">
-              Elige tu ciudad
+            <p className="home-cities-lead home-fade-up home-fade-up-delay-1">
+              Una nueva ciudad te espera: busca, contacta y cotiza tu próxima habitación. Únete a
+              la comunidad para dejar reseñas a las casas, funar clientes y construir juntas un
+              espacio más seguro.
+            </p>
+            <h1 className="home-display home-cities-title home-fade-up home-fade-up-delay-2">
+              Ciudades
             </h1>
-            <p className="home-cities-sub home-fade-up home-fade-up-delay-2">
-              <MapPin className="home-cities-sub-icon" aria-hidden />
-              <span>Solo ciudades con publicaciones activas</span>
-            </p>
           </div>
 
           <div className="home-fade-up home-fade-up-delay-3 rounded-xl border border-white/8 bg-card/60 p-3 backdrop-blur-sm">
@@ -146,6 +147,8 @@ export function HomePage() {
 
         <DestacadasCarousel />
 
+        <AnunciosGuidesSection />
+
         <SafetyTipsSection />
 
         <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card/80 to-card p-5">
@@ -156,12 +159,13 @@ export function HomePage() {
           <div className="relative space-y-4">
             <div>
               <p className="eyebrow text-primary">Si eres escort</p>
-              <h2 className="home-display home-cities-title mt-1.5 !text-[clamp(1.55rem,6vw,2.1rem)] text-foreground">
+              <h2 className="home-display home-section-title mt-1.5">
                 Haz tuya la comunidad
               </h2>
               <p className="page-subtitle mt-2.5 leading-relaxed">
-                Hospedaje confiable, avisos de seguridad y apoyo entre colegas. Un espacio
-                privado, pensado para cuidarte.
+                Hospedaje confiable, avisos de seguridad y apoyo entre colegas. Dentro de la
+                comunidad también puedes comentar y dejar reseñas a las casas, calificándolas con
+                estrellas. Un espacio privado, pensado para cuidarte.
               </p>
             </div>
             <div className="flex flex-col gap-3">

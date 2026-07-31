@@ -2,10 +2,10 @@ import { Link } from 'react-router-dom'
 import { MapPin, MessageCircle, Wifi, Users, ArrowRight, Bath } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  HabitacionPhotoSeal,
-  habitacionCoverUrl,
-  HABITACION_DEFAULT_COVER,
-} from '@/features/home/components/HabitacionPhotoSeal'
+  HabitacionCardCover,
+  HabitacionVideoPlayBadge,
+  isHabitacionVideoCover,
+} from '@/features/home/components/HabitacionCardCover'
 import { getRecibeALabel, whatsappUrl, habitacionWhatsappPhone } from '@/lib/habitaciones'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
 import type { Resource } from '@/types/resources'
@@ -17,38 +17,37 @@ interface HabitacionCardProps {
 }
 
 export function HabitacionCard({ habitacion, detailTo, showFavorite = false }: HabitacionCardProps) {
-  const photo = habitacionCoverUrl(habitacion.photos)
-  const isDefaultCover = photo === HABITACION_DEFAULT_COVER
   const whatsappPhone = habitacionWhatsappPhone(habitacion.whatsapp_phone)
   const recibeLabel = getRecibeALabel(
     habitacion.recibe_mujer,
     habitacion.recibe_hombre,
     habitacion.recibe_trans,
   )
+  const videoCover = isHabitacionVideoCover(habitacion.photos, habitacion.video_url)
 
   return (
     <article className="home-card-lift group overflow-hidden rounded-2xl border border-white/10 bg-card/90 shadow-[0_16px_40px_-28px_rgba(0,0,0,0.9)]">
       <div className="relative">
         <Link to={detailTo} className="block overflow-hidden">
           <div className="relative aspect-[4/3] bg-muted">
-          <img
-            src={photo}
-            alt={habitacion.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            loading="lazy"
-          />
-          {!isDefaultCover && <HabitacionPhotoSeal />}
-          <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-          {habitacion.city && (
-            <span className="absolute bottom-3 left-3 z-[3] inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">
-              <MapPin className="h-3 w-3" />
-              {habitacion.city.name}
-            </span>
-          )}
-        </div>
+            <HabitacionCardCover
+              photos={habitacion.photos}
+              videoUrl={habitacion.video_url}
+              alt={habitacion.name}
+              mediaClassName="transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+            <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+            {videoCover && <HabitacionVideoPlayBadge />}
+            {habitacion.city && (
+              <span className="absolute bottom-3 left-3 z-[4] inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">
+                <MapPin className="h-3 w-3" />
+                {habitacion.city.name}
+              </span>
+            )}
+          </div>
         </Link>
         {showFavorite && (
-          <div className="absolute right-2 top-2 z-[4]">
+          <div className="absolute right-2 top-2 z-[5]">
             <BookmarkButton
               itemType="resource"
               itemId={habitacion.id}

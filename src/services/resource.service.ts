@@ -56,13 +56,14 @@ const PUBLIC_HABITACION_SELECT = `
   photos:resource_photos(id, resource_id, url, sort_order, created_at)
 `
 
-/** Listado/cards: sin video ni campos de moderación; solo cover (1ª foto). */
+/** Listado/cards: cover (1ª foto) + video_url para casas solo-video. */
 const PUBLIC_HABITACION_CARD_SELECT = `
   id, city_id, category, status, name,
   phone, address, whatsapp_phone, contact_phone,
   rating_avg, reviews_count, is_verified, is_active, is_public,
   recibe_mujer, recibe_hombre, recibe_trans, pide_reserva,
   acepta_parejas, tiene_wifi, tiene_bano_privado,
+  video_url,
   created_at, updated_at,
   city:cities!city_id(id, name, slug),
   photos:resource_photos(id, resource_id, url, sort_order, created_at).order(sort_order.asc).limit(1)
@@ -181,7 +182,7 @@ async function withSignedPhotos(resource: Resource): Promise<Resource> {
   return sorted
 }
 
-/** Listado: firma covers en un solo batch de Storage (no 1 request por casa). */
+/** Listado: firma covers (fotos) y, si no hay foto, el video en batch. */
 async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
   const prepared = resources.map((resource) => {
     const sorted = sortPhotos({
@@ -190,7 +191,10 @@ async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
     })
     const cover = sorted.photos?.[0] ?? null
     const path = cover ? storagePathFromUrl(cover.url) : null
-    return { resource: sorted, cover, path }
+    const videoPath = sorted.video_url
+      ? storagePathFromUrl(sorted.video_url, VIDEOS_BUCKET)
+      : null
+    return { resource: sorted, cover, path, videoPath }
   })
 
   const paths = [...new Set(prepared.map((p) => p.path).filter((p): p is string => !!p))]
@@ -205,13 +209,37 @@ async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
     }
   }
 
-  return prepared.map(({ resource, cover, path }) => {
-    if (cover && path && urlByPath.has(path)) {
-      resource.photos = [{ ...cover, url: urlByPath.get(path)! }]
-    } else {
-      resource.photos = []
+  const withPhotos = prepared.map(({ resource, cover, path, videoPath }) => {
+    const hasCover = !!(cover && path && urlByPath.has(path))
+    if (hasCover) {
+      resource.photos = [{ ...cover!, url: urlByPath.get(path!)! }]
+      resource.video_url = null
+      return { resource, videoPath: null as string | null }
     }
-    resource.video_url = null
+    resource.photos = []
+    return { resource, videoPath: videoPath && resource.video_url ? videoPath : null }
+  })
+
+  const videoPaths = [
+    ...new Set(withPhotos.map((p) => p.videoPath).filter((p): p is string => !!p)),
+  ]
+  const videoUrlByPath = new Map<string, string>()
+
+  if (videoPaths.length > 0) {
+    const { data } = await supabase.storage
+      .from(VIDEOS_BUCKET)
+      .createSignedUrls(videoPaths, SIGNED_VIDEO_TTL_SEC)
+    for (const row of data ?? []) {
+      if (row.path && row.signedUrl) videoUrlByPath.set(row.path, row.signedUrl)
+    }
+  }
+
+  return withPhotos.map(({ resource, videoPath }) => {
+    if (videoPath && videoUrlByPath.has(videoPath)) {
+      resource.video_url = videoUrlByPath.get(videoPath)!
+    } else {
+      resource.video_url = null
+    }
     return resource
   })
 }

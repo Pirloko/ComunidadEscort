@@ -26,6 +26,10 @@ function buildMediaItems(photos: ResourcePhoto[], videoUrl: string | null): Medi
     url: p.url,
   }))
 
+  if (videoUrl) {
+    items.push({ type: 'video', url: videoUrl })
+  }
+
   if (items.length === 0) {
     items.push({
       type: 'photo',
@@ -35,9 +39,6 @@ function buildMediaItems(photos: ResourcePhoto[], videoUrl: string | null): Medi
     })
   }
 
-  if (videoUrl) {
-    items.push({ type: 'video', url: videoUrl })
-  }
   return items
 }
 

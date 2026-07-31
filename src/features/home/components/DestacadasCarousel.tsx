@@ -4,40 +4,38 @@ import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  HabitacionPhotoSeal,
-  habitacionCoverUrl,
-  HABITACION_DEFAULT_COVER,
-} from '@/features/home/components/HabitacionPhotoSeal'
+  HabitacionCardCover,
+  HabitacionVideoPlayBadge,
+  isHabitacionVideoCover,
+} from '@/features/home/components/HabitacionCardCover'
 import { FEATURED_HABITACIONES_LIMIT } from '@/lib/habitaciones'
 import { cn } from '@/lib/utils'
 import { resourceService } from '@/services/resource.service'
 import type { Resource } from '@/types/resources'
 
 function DestacadaSlide({ habitacion }: { habitacion: Resource }) {
-  const photo = habitacionCoverUrl(habitacion.photos)
-  const isDefaultCover = photo === HABITACION_DEFAULT_COVER
   const detailTo = `/home/habitaciones/${habitacion.id}`
+  const videoCover = isHabitacionVideoCover(habitacion.photos, habitacion.video_url)
 
   return (
     <article className="destacadas-slide group relative shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-card/90 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.85)]">
       <Link to={detailTo} className="block">
         <div className="relative aspect-[3/4] min-h-[22rem] overflow-hidden bg-muted sm:min-h-[26rem]">
-          <img
-            src={photo}
+          <HabitacionCardCover
+            photos={habitacion.photos}
+            videoUrl={habitacion.video_url}
             alt={habitacion.name}
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-            loading="lazy"
-            draggable={false}
+            mediaClassName="transition-transform duration-700 ease-out group-hover:scale-[1.05]"
           />
-          {!isDefaultCover && <HabitacionPhotoSeal />}
           <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+          {videoCover && <HabitacionVideoPlayBadge />}
           {habitacion.city && (
-            <span className="absolute left-3 top-3 z-[3] inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md">
+            <span className="absolute left-3 top-3 z-[4] inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md">
               <MapPin className="h-3.5 w-3.5" />
               {habitacion.city.name}
             </span>
           )}
-          <div className="absolute inset-x-0 bottom-0 z-[3] space-y-1.5 p-5">
+          <div className="absolute inset-x-0 bottom-0 z-[4] space-y-1.5 p-5">
             <h3 className="home-display text-[clamp(1.35rem,5vw,1.75rem)] font-semibold leading-tight text-white drop-shadow">
               {habitacion.name}
             </h3>
