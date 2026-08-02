@@ -5,7 +5,19 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Archivos SEO: Content-Type correcto (Vite los copia desde public/ a dist/)
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml; charset=utf-8"
+
 # React Router (SPA): rutas client-side → index.html
+# (sin force: Netlify sirve robots.txt / sitemap.xml si existen en dist/)
 [[redirects]]
   from = "/*"
   to = "/index.html"

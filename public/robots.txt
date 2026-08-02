@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+Allow: /home
+Allow: /habitaciones-escort/
+Allow: /guia-publicaciones-
+
+# Rutas privadas / con sesión — no indexar
+Disallow: /feed
+Disallow: /forum
+Disallow: /alerts
+Disallow: /casas
+Disallow: /resources
+Disallow: /chat
+Disallow: /notifications
+Disallow: /bookmarks
+Disallow: /members
+Disallow: /profile
+Disallow: /settings
+Disallow: /admin
+Disallow: /moderation
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /cuenta-pendiente
+Disallow: /cambiar-password-obligatorio
+
+Sitemap: https://comunidadescort.cl/sitemap.xml
