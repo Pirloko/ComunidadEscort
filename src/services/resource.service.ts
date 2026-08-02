@@ -323,6 +323,10 @@ export const resourceService = {
     cityIds?: string[]
     category?: ResourceCategory
     search?: string
+    recibe_mujer?: boolean
+    recibe_hombre?: boolean
+    recibe_trans?: boolean
+    acepta_parejas?: boolean
     limit?: number
     offset?: number
   }): Promise<{ items: Resource[]; total: number }> {
@@ -345,6 +349,10 @@ export const resourceService = {
     if (params.cityId) query = query.eq('city_id', params.cityId)
     else if (params.cityIds?.length) query = query.in('city_id', params.cityIds)
     if (params.category) query = query.eq('category', params.category)
+    if (params.recibe_mujer) query = query.eq('recibe_mujer', true)
+    if (params.recibe_hombre) query = query.eq('recibe_hombre', true)
+    if (params.recibe_trans) query = query.eq('recibe_trans', true)
+    if (params.acepta_parejas) query = query.eq('acepta_parejas', true)
     if (params.search?.trim()) {
       const q = escapeIlike(params.search)
       if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`)

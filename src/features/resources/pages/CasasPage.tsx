@@ -1,48 +1,48 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Home, MapPin, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Home, Search, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ErrorState } from '@/components/shared/ErrorState'
 import { HabitacionCard } from '@/features/home/components/HabitacionCard'
-import { useCity } from '@/features/cities/context/CityContext'
 import { CASAS_PAGE_SIZE } from '@/lib/habitaciones'
 import { resourceService } from '@/services/resource.service'
 import '@/features/home/home-landing.css'
 
+type RecibeFilter = 'todos' | 'mujer' | 'hombre' | 'trans'
+
+const RECIBE_OPTIONS: { id: RecibeFilter; label: string }[] = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'mujer', label: 'Mujeres' },
+  { id: 'trans', label: 'Trans' },
+  { id: 'hombre', label: 'Hombre' },
+]
+
 export function CasasPage() {
-  const { cities } = useCity()
-  const [cityId, setCityId] = useState('')
-  const [citySearch, setCitySearch] = useState('')
+  const [recibe, setRecibe] = useState<RecibeFilter>('todos')
+  const [soloParejas, setSoloParejas] = useState(false)
+  const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const listRef = useRef<HTMLElement>(null)
 
-  const cityQuery = citySearch.trim().toLowerCase()
-
-  const filteredCities = useMemo(() => {
-    if (!cityQuery) return cities
-    return cities.filter((c) => c.name.toLowerCase().includes(cityQuery))
-  }, [cities, cityQuery])
-
-  const cityIdsFilter = useMemo(() => {
-    if (cityId) return undefined
-    if (!cityQuery) return undefined
-    return filteredCities.map((c) => c.id)
-  }, [cityId, cityQuery, filteredCities])
+  const searchQuery = search.trim()
 
   useEffect(() => {
     setPage(1)
-  }, [cityId, cityQuery])
+  }, [recibe, soloParejas, searchQuery])
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey: ['casas-habitaciones', cityId || 'all', cityQuery, page],
+    queryKey: ['casas-habitaciones', recibe, soloParejas, searchQuery, page],
     queryFn: () =>
       resourceService.getResourcesPage({
-        cityId: cityId || undefined,
-        cityIds: cityIdsFilter,
         category: 'habitaciones_escort',
+        search: searchQuery || undefined,
+        recibe_mujer: recibe === 'mujer' ? true : undefined,
+        recibe_hombre: recibe === 'hombre' ? true : undefined,
+        recibe_trans: recibe === 'trans' ? true : undefined,
+        acepta_parejas: soloParejas ? true : undefined,
         limit: CASAS_PAGE_SIZE,
         offset: (page - 1) * CASAS_PAGE_SIZE,
       }),
@@ -70,7 +70,8 @@ export function CasasPage() {
           Casas y habitaciones
         </h1>
         <p className="page-subtitle mt-1.5">
-          Filtra por ciudad, guarda favoritas y deja tu reseña. Solo para miembros de la comunidad.
+          Filtra por quién recibe la casa, guarda favoritas y deja tu reseña. Solo para
+          miembros de la comunidad.
         </p>
       </div>
 
@@ -78,56 +79,59 @@ export function CasasPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={citySearch}
-            onChange={(e) => {
-              setCitySearch(e.target.value)
-              if (cityId) setCityId('')
-            }}
-            placeholder="Buscar ciudad…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar casa…"
             className="pl-9"
-            aria-label="Buscar ciudad"
+            aria-label="Buscar casa"
           />
         </div>
 
         <div>
           <p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5" />
-            Ciudad
+            <Users className="h-3.5 w-3.5" />
+            Recibe a
+          </p>
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {RECIBE_OPTIONS.map((opt) => (
+              <Button
+                key={opt.id}
+                type="button"
+                size="sm"
+                variant={recibe === opt.id ? 'accent' : 'outline'}
+                className="shrink-0 rounded-lg"
+                onClick={() => setRecibe(opt.id)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            Parejas
           </p>
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Button
               type="button"
               size="sm"
-              variant={cityId === '' && !cityQuery ? 'accent' : 'outline'}
+              variant={!soloParejas ? 'accent' : 'outline'}
               className="shrink-0 rounded-lg"
-              onClick={() => {
-                setCityId('')
-                setCitySearch('')
-              }}
+              onClick={() => setSoloParejas(false)}
             >
               Todas
             </Button>
-            {filteredCities.map((c) => (
-              <Button
-                key={c.id}
-                type="button"
-                size="sm"
-                variant={cityId === c.id ? 'accent' : 'outline'}
-                className="shrink-0 rounded-lg"
-                onClick={() => {
-                  setCityId(c.id === cityId ? '' : c.id)
-                  setCitySearch('')
-                }}
-              >
-                {c.name}
-              </Button>
-            ))}
+            <Button
+              type="button"
+              size="sm"
+              variant={soloParejas ? 'accent' : 'outline'}
+              className="shrink-0 rounded-lg"
+              onClick={() => setSoloParejas(true)}
+            >
+              Reciben pareja
+            </Button>
           </div>
-          {cityQuery && filteredCities.length === 0 && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              No hay ciudades que coincidan con “{citySearch.trim()}”.
-            </p>
-          )}
         </div>
       </div>
 
@@ -139,7 +143,7 @@ export function CasasPage() {
           />
         )}
 
-        {(isLoading && habitaciones.length === 0) && (
+        {isLoading && habitaciones.length === 0 && (
           <div className="space-y-4">
             <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
             <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
