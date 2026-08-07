@@ -71,3 +71,30 @@ export interface UpdateCityInput {
   region_id?: string
   is_active?: boolean
 }
+
+export interface RecommendedPublisher {
+  id: string
+  name: string
+  whatsapp: string
+  note: string | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateRecommendedPublisherInput {
+  name: string
+  whatsapp: string
+  note?: string | null
+  is_active?: boolean
+  sort_order?: number
+}
+
+export interface UpdateRecommendedPublisherInput {
+  name?: string
+  whatsapp?: string
+  note?: string | null
+  is_active?: boolean
+  sort_order?: number
+}

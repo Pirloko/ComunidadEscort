@@ -9,7 +9,7 @@ interface CityContextValue {
   cities: City[]
   selectedCity: City | null
   selectedCityId: string | null
-  setSelectedCityId: (cityId: string) => void
+  setSelectedCityId: (cityId: string | null) => void
   isLoading: boolean
 }
 
@@ -40,13 +40,18 @@ export function CityProvider({ children }: { children: ReactNode }) {
       setSelectedCityIdState(profileCity.id)
       localStorage.setItem(STORAGE_KEYS.selectedCityId, profileCity.id)
     } else {
-      setSelectedCityIdState(cities[0].id)
+      // Sin ciudad de perfil ni guardada: no inventar una (p. ej. Ancud por orden alfabético)
+      setSelectedCityIdState(null)
     }
   }, [cities, profile?.city_id])
 
-  const setSelectedCityId = (cityId: string) => {
+  const setSelectedCityId = (cityId: string | null) => {
     setSelectedCityIdState(cityId)
-    localStorage.setItem(STORAGE_KEYS.selectedCityId, cityId)
+    if (cityId) {
+      localStorage.setItem(STORAGE_KEYS.selectedCityId, cityId)
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.selectedCityId)
+    }
   }
 
   const selectedCity = useMemo(

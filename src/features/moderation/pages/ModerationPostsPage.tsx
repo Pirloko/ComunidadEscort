@@ -21,7 +21,6 @@ export function ModerationPostsPage() {
         search: search || undefined,
         limit: 50,
       }),
-    enabled: !!selectedCityId,
   })
 
   return (

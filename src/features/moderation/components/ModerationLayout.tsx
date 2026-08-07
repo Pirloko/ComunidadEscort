@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, ShieldAlert, MessageSquare, MessageCircle, MapPin, Flag } from 'lucide-react'
+import { LayoutDashboard, ShieldAlert, MessageSquare, MessageCircle, Flag } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { moderationService } from '@/services/moderation.service'
@@ -7,7 +7,6 @@ import { moderationService } from '@/services/moderation.service'
 const TABS = [
   { to: '/moderation', label: 'Resumen', icon: LayoutDashboard, end: true },
   { to: '/moderation/alerts', label: 'Alertas', icon: ShieldAlert, countKey: 'alerts' as const },
-  { to: '/moderation/resources', label: 'Datos de todo', icon: MapPin, countKey: 'resources' as const },
   { to: '/moderation/reports', label: 'Reportes', icon: Flag, countKey: 'reports' as const },
   { to: '/moderation/posts', label: 'Publicaciones', icon: MessageSquare },
   { to: '/moderation/comments', label: 'Comentarios', icon: MessageCircle },
@@ -20,26 +19,20 @@ export function ModerationLayout() {
     refetchInterval: 30000,
   })
 
-  const { data: pendingResources = 0 } = useQuery({
-    queryKey: ['pending-resources-count'],
-    queryFn: () => moderationService.getPendingResourcesCount(),
-    refetchInterval: 30000,
-  })
-
   const { data: pendingReports = 0 } = useQuery({
     queryKey: ['pending-reports-count'],
     queryFn: () => moderationService.getPendingReportsCount(),
     refetchInterval: 30000,
   })
 
-  const pendingCounts = { alerts: pendingAlerts, resources: pendingResources, reports: pendingReports }
+  const pendingCounts = { alerts: pendingAlerts, reports: pendingReports }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="page-title">Panel de moderación</h1>
         <p className="text-muted-foreground">
-          Gestiona alertas, Datos de todo, publicaciones y comentarios de la comunidad.
+          Gestiona alertas, reportes, publicaciones y comentarios de la comunidad.
         </p>
       </div>
 

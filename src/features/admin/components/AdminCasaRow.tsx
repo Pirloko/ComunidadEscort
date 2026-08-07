@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Pause, Pencil, Play, Trash2 } from 'lucide-react'
+import { Check, ExternalLink, Pause, Pencil, Play, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatRelativeTime } from '@/lib/format'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 import { resourceService } from '@/services/resource.service'
 import type { Resource } from '@/types/resources'
 
@@ -12,15 +13,19 @@ interface AdminCasaRowProps {
 }
 
 export function AdminCasaRow({ resource }: AdminCasaRowProps) {
+  const { user } = useAuth()
   const queryClient = useQueryClient()
+  const isPendingReview = resource.status === 'pendiente'
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-casas'] })
+    queryClient.invalidateQueries({ queryKey: ['admin-casas-pending-count'] })
     queryClient.invalidateQueries({ queryKey: ['casas-habitaciones'] })
     queryClient.invalidateQueries({ queryKey: ['resources'] })
     queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
     queryClient.invalidateQueries({ queryKey: ['public-habitaciones'] })
     queryClient.invalidateQueries({ queryKey: ['public-habitacion-cities'] })
+    queryClient.invalidateQueries({ queryKey: ['pending-resources'] })
   }
 
   const toggleActiveMutation = useMutation({
@@ -35,6 +40,21 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
     onSuccess: invalidate,
   })
 
+  const approveMutation = useMutation({
+    mutationFn: () =>
+      resourceService.reviewResource(resource.id, user!.id, { status: 'aprobada' }),
+    onSuccess: invalidate,
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: () =>
+      resourceService.reviewResource(resource.id, user!.id, {
+        status: 'rechazada',
+        rejection_reason: 'Rechazada por administración',
+      }),
+    onSuccess: invalidate,
+  })
+
   const deleteMutation = useMutation({
     mutationFn: () => resourceService.deleteResource(resource.id),
     onSuccess: invalidate,
@@ -43,6 +63,8 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
   const isPending =
     toggleActiveMutation.isPending ||
     togglePublicMutation.isPending ||
+    approveMutation.isPending ||
+    rejectMutation.isPending ||
     deleteMutation.isPending
 
   const handleDelete = () => {
@@ -60,18 +82,22 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
     <div className="flex flex-col gap-3 border-b px-4 py-4 last:border-b-0 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          {resource.is_active ? (
+          {isPendingReview ? (
+            <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300">
+              Pendiente de aprobación
+            </Badge>
+          ) : resource.is_active ? (
             <Badge className="bg-success/20 text-success">Activa</Badge>
           ) : (
             <Badge variant="outline" className="text-muted-foreground">
               Pausada
             </Badge>
           )}
-          {resource.is_public ? (
+          {!isPendingReview && resource.is_public ? (
             <Badge variant="secondary">Pública (/home)</Badge>
-          ) : (
+          ) : !isPendingReview ? (
             <Badge variant="outline">Solo comunidad</Badge>
-          )}
+          ) : null}
           {resource.is_verified && (
             <Badge className="bg-accent/20 text-accent">Verificada</Badge>
           )}
@@ -84,6 +110,7 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
         )}
         <p className="mt-2 text-xs text-muted-foreground">
           {resource.city?.name ?? 'Sin ciudad'} · {formatRelativeTime(resource.created_at)}
+          {resource.author?.alias ? ` · @${resource.author.alias}` : ''}
           {resource.reviews_count > 0 && (
             <> · ★ {resource.rating_avg} ({resource.reviews_count})</>
           )}
@@ -91,54 +118,87 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
       </div>
 
       <div className="flex shrink-0 flex-wrap gap-1.5">
-        <Link
-          to={`/casas/${resource.id}`}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-muted"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          Ver
-        </Link>
-        <Link
-          to={`/admin/casas/${resource.id}/edit`}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-muted"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Editar
-        </Link>
+        {isPendingReview ? (
+          <>
+            <Button
+              size="sm"
+              className="gap-1"
+              disabled={isPending || !user}
+              onClick={() => approveMutation.mutate()}
+            >
+              <Check className="h-3.5 w-3.5" />
+              Aprobar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1 text-destructive"
+              disabled={isPending || !user}
+              onClick={() => {
+                if (confirm(`¿Rechazar «${resource.name}»?`)) rejectMutation.mutate()
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+              Rechazar
+            </Button>
+            <Link
+              to={`/admin/casas/${resource.id}/edit`}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-muted"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Revisar
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              to={`/casas/${resource.id}`}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-muted"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Ver
+            </Link>
+            <Link
+              to={`/admin/casas/${resource.id}/edit`}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-muted"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => togglePublicMutation.mutate()}
+              disabled={isPending}
+            >
+              {resource.is_public ? 'Ocultar de /home' : 'Publicar en /home'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toggleActiveMutation.mutate()}
+              disabled={isPending}
+            >
+              {resource.is_active ? (
+                <>
+                  <Pause className="h-3.5 w-3.5" /> Pausar
+                </>
+              ) : (
+                <>
+                  <Play className="h-3.5 w-3.5" /> Activar
+                </>
+              )}
+            </Button>
+          </>
+        )}
         <Button
           variant="outline"
           size="sm"
-          onClick={() => togglePublicMutation.mutate()}
-          disabled={isPending}
-        >
-          {resource.is_public ? 'Ocultar de /home' : 'Publicar en /home'}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => toggleActiveMutation.mutate()}
-          disabled={isPending}
-        >
-          {resource.is_active ? (
-            <>
-              <Pause className="h-3.5 w-3.5" />
-              Pausar
-            </>
-          ) : (
-            <>
-              <Play className="h-3.5 w-3.5" />
-              Reactivar
-            </>
-          )}
-        </Button>
-        <Button
-          variant="destructive"
-          size="sm"
+          className="text-destructive"
           onClick={handleDelete}
           disabled={isPending}
         >
           <Trash2 className="h-3.5 w-3.5" />
-          Eliminar
         </Button>
       </div>
     </div>

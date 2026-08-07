@@ -48,10 +48,11 @@ export function ResourceForm({
   )
   const isEditing = !!initialData
   const isAdmin = profile?.role === 'admin'
+  const isStaff = profile?.role === 'admin' || profile?.role === 'moderator'
 
   const categories = RESOURCE_CATEGORIES.filter((c) => {
     if (c.value === 'all') return false
-    if (c.value === 'habitaciones_escort' && !isAdmin) return false
+    if (c.value === 'habitaciones_escort' && !isStaff) return false
     return true
   })
 
@@ -103,11 +104,12 @@ export function ResourceForm({
   const onSubmit = async (data: ResourceFormData) => {
     setError(null)
     try {
-      if ((forceCategory ?? data.category) === 'habitaciones_escort' && !isAdmin) {
-        throw new Error('Solo administradoras pueden publicar habitaciones para escort.')
+      if ((forceCategory ?? data.category) === 'habitaciones_escort' && !isStaff) {
+        throw new Error('Solo moderadoras o administradoras pueden publicar habitaciones.')
       }
 
       const isHabitacionSubmit = (forceCategory ?? data.category) === 'habitaciones_escort'
+      const publishImmediately = !isHabitacionSubmit || isAdmin
 
       const payload = {
         city_id: data.city_id,
@@ -143,7 +145,9 @@ export function ResourceForm({
 
       let resource = isEditing
         ? await resourceService.updateResource(initialData.id, payload)
-        : await resourceService.createResource(authorId, payload)
+        : await resourceService.createResource(authorId, payload, {
+            publishImmediately,
+          })
 
       if (isHabitacion && pendingFiles.length > 0) {
         const startOrder = existingPhotos.length
@@ -240,15 +244,18 @@ export function ResourceForm({
           )}
           {isHabitacion && (
             <p className="text-xs text-muted-foreground">
-              Solo admin publica habitaciones. Marca &quot;Visible en /home&quot; para el listado público.
+              {isAdmin
+                ? 'Marca «Visible en /home» para el listado público.'
+                : 'La casa quedará pendiente hasta que una administradora la apruebe.'}
             </p>
           )}
         </div>
       )}
       {forceCategory === 'habitaciones_escort' && (
         <p className="text-xs text-muted-foreground">
-          Habitación para escort. Marca &quot;Visible en /home&quot; si quieres que aparezca en el listado
-          público.
+          {isAdmin
+            ? 'Habitación para escort. Marca «Visible en /home» si quieres que aparezca en el listado público.'
+            : 'Habitación para escort. Quedará pendiente de aprobación de una administradora antes de ser visible.'}
         </p>
       )}
 

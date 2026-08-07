@@ -19,10 +19,11 @@ export function CitySelector({ className }: CitySelectorProps) {
       <MapPin className="pointer-events-none absolute left-2.5 h-4 w-4 text-muted-foreground" />
       <select
         value={selectedCityId ?? ''}
-        onChange={(e) => setSelectedCityId(e.target.value)}
+        onChange={(e) => setSelectedCityId(e.target.value || null)}
         className="h-9 appearance-none rounded-md border border-input bg-background pl-8 pr-8 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Seleccionar ciudad"
       >
+        <option value="">Todas las ciudades</option>
         {cities.map((city) => (
           <option key={city.id} value={city.id}>
             {city.name}

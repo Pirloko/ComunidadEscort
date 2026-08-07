@@ -13,7 +13,7 @@ import { useCity } from '@/features/cities/context/CityContext'
 import { resourceService } from '@/services/resource.service'
 import { cn } from '@/lib/utils'
 
-type StatusFilter = 'all' | 'active' | 'paused'
+type StatusFilter = 'all' | 'pending' | 'active' | 'paused'
 
 const PAGE_SIZE = 10
 
@@ -33,12 +33,26 @@ export function AdminCasasPage() {
     return () => window.clearTimeout(t)
   }, [search])
 
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ['admin-casas-pending-count'],
+    queryFn: async () => {
+      const res = await resourceService.getHabitacionesForAdmin({
+        reviewStatus: 'pendiente',
+        page: 1,
+        pageSize: 1,
+      })
+      return res.total
+    },
+    refetchInterval: 30000,
+  })
+
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['admin-casas', debouncedSearch, cityId, status, page],
     queryFn: () =>
       resourceService.getHabitacionesForAdmin({
         search: debouncedSearch || undefined,
         cityId: cityId || undefined,
+        reviewStatus: status === 'pending' ? 'pendiente' : status === 'all' ? 'all' : 'aprobada',
         onlyActive: status === 'active' ? true : undefined,
         onlyPaused: status === 'paused' ? true : undefined,
         cities,
@@ -59,7 +73,22 @@ export function AdminCasasPage() {
           <div>
             <CardTitle className="text-base">Casas y habitaciones</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Crear, editar, pausar o eliminar hospedajes para escort.
+              Crear, aprobar, editar, pausar o eliminar hospedajes para escort.
+              {pendingCount > 0 && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="font-medium text-destructive underline-offset-2 hover:underline"
+                    onClick={() => {
+                      setStatus('pending')
+                      setPage(1)
+                    }}
+                  >
+                    {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''} de aprobación
+                  </button>
+                </>
+              )}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
@@ -107,6 +136,7 @@ export function AdminCasasPage() {
             {(
               [
                 ['all', 'Todas'],
+                ['pending', 'Pendientes'],
                 ['active', 'Activas'],
                 ['paused', 'Pausadas'],
               ] as const
@@ -123,6 +153,7 @@ export function AdminCasasPage() {
                 }}
               >
                 {label}
+                {value === 'pending' && pendingCount > 0 ? ` (${pendingCount})` : ''}
               </Button>
             ))}
           </div>

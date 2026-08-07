@@ -48,7 +48,9 @@ export function AdminCasaFormPage() {
         <CardHeader>
           <CardTitle>{isEdit ? 'Editar casa / habitación' : 'Nueva casa / habitación'}</CardTitle>
           <CardDescription>
-            Solo administradoras. Puedes pausarla o publicarla en /home desde el listado.
+            {isEdit
+              ? 'Edita la ficha. Solo administradoras pueden publicar en /home.'
+              : 'Se publica de inmediato. Puedes pausarla o publicarla en /home desde el listado.'}
           </CardDescription>
         </CardHeader>
         <CardContent>

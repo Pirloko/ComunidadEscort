@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { BrandLogo } from '@/components/shared/BrandLogo'
 import { Button } from '@/components/ui/button'
 import {
@@ -62,48 +62,62 @@ export function AnunciosGuidePage() {
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{guide.intro}</p>
         </div>
 
-        {!guide.ready ? null : (
-          <>
-            {guide.listadoImage && (
-              <section className="space-y-3" aria-labelledby="listado-title">
-                <h2
-                  id="listado-title"
-                  className="home-display text-xl font-semibold tracking-tight text-foreground"
+        {guide.ready && guide.listadoImages.length > 0 && (
+          <section className="space-y-3" aria-labelledby="listado-title">
+            <h2
+              id="listado-title"
+              className="home-display text-xl font-semibold tracking-tight text-foreground"
+            >
+              Así se ven las publicaciones en el listado
+            </h2>
+            <div className="space-y-3">
+              {guide.listadoImages.map((img) => (
+                <figure
+                  key={img.src}
+                  className="overflow-hidden rounded-2xl border border-white/10 bg-card/60"
                 >
-                  Así se ven las publicaciones en el listado
-                </h2>
-                <figure className="overflow-hidden rounded-2xl border border-white/10 bg-card/60">
                   <img
-                    src={guide.listadoImage}
-                    alt={guide.listadoAlt}
+                    src={img.src}
+                    alt={img.alt}
                     className="h-auto w-full"
                     loading="lazy"
                   />
                 </figure>
-              </section>
-            )}
+              ))}
+            </div>
+          </section>
+        )}
 
-            {guide.faqs.length > 0 && (
-              <section className="space-y-4" aria-labelledby="faq-title">
-                <h2
-                  id="faq-title"
-                  className="home-display text-xl font-semibold tracking-tight text-foreground"
-                >
-                  Preguntas frecuentes sobre publicaciones
-                </h2>
-                <div className="divide-y divide-white/10 rounded-2xl border border-white/10 bg-card/70">
-                  {guide.faqs.map((faq) => (
-                    <div key={faq.question} className="space-y-2 px-4 py-4">
-                      <h3 className="text-[0.95rem] font-semibold leading-snug text-foreground">
-                        {faq.question}
-                      </h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
-                    </div>
-                  ))}
+        <Button
+          asChild
+          variant="accent"
+          className="home-btn-cta h-11 w-full gap-2 rounded-xl text-sm font-semibold"
+        >
+          <a href={guide.siteUrl} target="_blank" rel="noopener noreferrer">
+            Conoce cómo es la página — abre aquí
+            <ExternalLink className="h-4 w-4 shrink-0 opacity-90" />
+          </a>
+        </Button>
+
+        {guide.ready && guide.faqs.length > 0 && (
+          <section className="space-y-4" aria-labelledby="faq-title">
+            <h2
+              id="faq-title"
+              className="home-display text-xl font-semibold tracking-tight text-foreground"
+            >
+              Preguntas frecuentes sobre publicaciones
+            </h2>
+            <div className="divide-y divide-white/10 rounded-2xl border border-white/10 bg-card/70">
+              {guide.faqs.map((faq) => (
+                <div key={faq.question} className="space-y-2 px-4 py-4">
+                  <h3 className="text-[0.95rem] font-semibold leading-snug text-foreground">
+                    {faq.question}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
                 </div>
-              </section>
-            )}
-          </>
+              ))}
+            </div>
+          </section>
         )}
 
         <section className="space-y-3 border-t border-white/5 pt-6">

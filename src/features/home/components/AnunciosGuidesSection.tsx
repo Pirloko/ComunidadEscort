@@ -1,8 +1,18 @@
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { MessageCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { ANUNCIOS_GUIDES, anunciosGuidePath } from '@/features/home/data/anuncios-guides'
+import { whatsappUrl } from '@/lib/habitaciones'
+import { publisherService } from '@/services/publisher.service'
 
 /** Sección SEO en /home: guía de publicaciones en portales conocidos. */
 export function AnunciosGuidesSection() {
+  const { data: publishers = [] } = useQuery({
+    queryKey: ['recommended-publishers'],
+    queryFn: () => publisherService.listActive(),
+  })
+
   return (
     <section className="space-y-4" aria-labelledby="guia-publicaciones-title">
       <div className="space-y-2.5">
@@ -36,6 +46,53 @@ export function AnunciosGuidesSection() {
           </Link>
         ))}
       </div>
+
+      {publishers.length > 0 && (
+        <div className="space-y-3 border-t border-white/8 pt-4" aria-labelledby="publicadores-title">
+          <div className="space-y-1">
+            <h3
+              id="publicadores-title"
+              className="home-display home-section-title !text-[clamp(1.25rem,4.5vw,1.55rem)]"
+            >
+              Publicadores recomendados
+            </h3>
+            <p className="text-xs text-muted-foreground">Contacto directo por WhatsApp.</p>
+          </div>
+
+          <ul className="space-y-2">
+            {publishers.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center gap-3 rounded-xl border border-white/10 bg-card/70 px-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
+                  {p.note && (
+                    <p className="truncate text-xs text-muted-foreground">{p.note}</p>
+                  )}
+                </div>
+                <Button
+                  asChild
+                  size="sm"
+                  className="h-9 shrink-0 gap-1.5 rounded-lg bg-[#25D366] px-3 text-xs font-semibold text-white hover:bg-[#1ebe57]"
+                >
+                  <a
+                    href={whatsappUrl(
+                      p.whatsapp,
+                      `Hola ${p.name}, te contacto desde Comunidadescort.`,
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    WhatsApp
+                  </a>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   )
 }

@@ -1,14 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Home, Search, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Home, MapPin, Plus, Search, Users, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ErrorState } from '@/components/shared/ErrorState'
 import { HabitacionCard } from '@/features/home/components/HabitacionCard'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+import { useCity } from '@/features/cities/context/CityContext'
 import { CASAS_PAGE_SIZE } from '@/lib/habitaciones'
 import { resourceService } from '@/services/resource.service'
+import type { City } from '@/types/database'
 import '@/features/home/home-landing.css'
 
 type RecibeFilter = 'todos' | 'mujer' | 'hombre' | 'trans'
@@ -21,24 +25,45 @@ const RECIBE_OPTIONS: { id: RecibeFilter; label: string }[] = [
 ]
 
 export function CasasPage() {
+  const { profile } = useAuth()
+  const { cities } = useCity()
+  const canCreateCasa = profile?.role === 'admin' || profile?.role === 'moderator'
+
   const [recibe, setRecibe] = useState<RecibeFilter>('todos')
   const [soloParejas, setSoloParejas] = useState(false)
-  const [search, setSearch] = useState('')
+  const [cityQuery, setCityQuery] = useState('')
+  const [selectedCity, setSelectedCity] = useState<City | null>(null)
+  const [cityMenuOpen, setCityMenuOpen] = useState(false)
   const [page, setPage] = useState(1)
   const listRef = useRef<HTMLElement>(null)
+  const cityBoxRef = useRef<HTMLDivElement>(null)
 
-  const searchQuery = search.trim()
+  const citySuggestions = useMemo(() => {
+    const q = cityQuery.trim().toLowerCase()
+    if (!q || selectedCity) return []
+    return cities.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8)
+  }, [cities, cityQuery, selectedCity])
 
   useEffect(() => {
     setPage(1)
-  }, [recibe, soloParejas, searchQuery])
+  }, [recibe, soloParejas, selectedCity?.id])
+
+  useEffect(() => {
+    const onPointerDown = (e: MouseEvent) => {
+      if (!cityBoxRef.current?.contains(e.target as Node)) {
+        setCityMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    return () => document.removeEventListener('mousedown', onPointerDown)
+  }, [])
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey: ['casas-habitaciones', recibe, soloParejas, searchQuery, page],
+    queryKey: ['casas-habitaciones', recibe, soloParejas, selectedCity?.id, page],
     queryFn: () =>
       resourceService.getResourcesPage({
         category: 'habitaciones_escort',
-        search: searchQuery || undefined,
+        cityId: selectedCity?.id,
         recibe_mujer: recibe === 'mujer' ? true : undefined,
         recibe_hombre: recibe === 'hombre' ? true : undefined,
         recibe_trans: recibe === 'trans' ? true : undefined,
@@ -62,29 +87,85 @@ export function CasasPage() {
     listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  const clearCity = () => {
+    setSelectedCity(null)
+    setCityQuery('')
+    setCityMenuOpen(false)
+  }
+
   return (
     <div className="mx-auto max-w-lg space-y-5 pb-2">
-      <div>
-        <h1 className="page-title flex items-center gap-2">
-          <Home className="h-6 w-6 text-primary" />
-          Casas y habitaciones
-        </h1>
-        <p className="page-subtitle mt-1.5">
-          Filtra por quién recibe la casa, guarda favoritas y deja tu reseña. Solo para
-          miembros de la comunidad.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            <Home className="h-6 w-6 text-primary" />
+            Casas y habitaciones
+          </h1>
+          <p className="page-subtitle mt-1.5">
+            Filtra por ciudad y quién recibe la casa, guarda favoritas y deja tu reseña.
+          </p>
+        </div>
+        {canCreateCasa && (
+          <Button asChild size="sm" className="shrink-0 gap-1">
+            <Link to="/casas/new">
+              <Plus className="h-4 w-4" />
+              Nueva
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="space-y-3 rounded-xl border bg-card/90 p-3 backdrop-blur-sm">
-        <div className="relative">
+        <div ref={cityBoxRef} className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar casa…"
-            className="pl-9"
-            aria-label="Buscar casa"
+            value={selectedCity ? selectedCity.name : cityQuery}
+            onChange={(e) => {
+              setSelectedCity(null)
+              setCityQuery(e.target.value)
+              setCityMenuOpen(true)
+            }}
+            onFocus={() => setCityMenuOpen(true)}
+            placeholder="Buscar por ciudad…"
+            className="pl-9 pr-9"
+            aria-label="Buscar por ciudad"
+            aria-autocomplete="list"
+            aria-expanded={cityMenuOpen && citySuggestions.length > 0}
           />
+          {(selectedCity || cityQuery) && (
+            <button
+              type="button"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+              onClick={clearCity}
+              aria-label="Limpiar ciudad"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {cityMenuOpen && citySuggestions.length > 0 && (
+            <ul
+              className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border bg-popover py-1 shadow-md"
+              role="listbox"
+            >
+              {citySuggestions.map((city) => (
+                <li key={city.id}>
+                  <button
+                    type="button"
+                    role="option"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                    onClick={() => {
+                      setSelectedCity(city)
+                      setCityQuery(city.name)
+                      setCityMenuOpen(false)
+                    }}
+                  >
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    {city.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div>
@@ -163,6 +244,7 @@ export function CasasPage() {
             <p className="text-sm text-muted-foreground">
               Página {page} de {totalPages}
               {total > 0 ? ` · ${total} publicación${total !== 1 ? 'es' : ''}` : ''}
+              {selectedCity ? ` · ${selectedCity.name}` : ''}
             </p>
             <ul className="space-y-4">
               {habitaciones.map((h) => (

@@ -17,7 +17,6 @@ export function ModerationCommentsPage() {
         cityId: selectedCityId ?? undefined,
         limit: 50,
       }),
-    enabled: !!selectedCityId,
   })
 
   return (

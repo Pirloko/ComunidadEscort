@@ -545,10 +545,20 @@ export const resourceService = {
     return count ?? 0
   },
 
-  async createResource(authorId: string, input: CreateResourceInput): Promise<Resource> {
+  async createResource(
+    authorId: string,
+    input: CreateResourceInput,
+    options?: { publishImmediately?: boolean },
+  ): Promise<Resource> {
+    const publishImmediately = options?.publishImmediately ?? true
+    const status =
+      input.category === 'habitaciones_escort' && !publishImmediately
+        ? 'pendiente'
+        : 'aprobada'
+
     const { data, error } = await supabase
       .from('resources')
-      .insert({ ...input, author_id: authorId, status: 'aprobada' })
+      .insert({ ...input, author_id: authorId, status })
       .select(RESOURCE_SELECT)
       .single()
 
@@ -726,6 +736,8 @@ export const resourceService = {
     onlyActive?: boolean
     /** Si true, solo pausadas. */
     onlyPaused?: boolean
+    /** pendiente | aprobada | all (default aprobada para listados legacy). */
+    reviewStatus?: 'pendiente' | 'aprobada' | 'all'
     /** Ciudades para resolver búsqueda por nombre de ciudad. */
     cities?: Array<{ id: string; name: string }>
     page?: number
@@ -736,12 +748,19 @@ export const resourceService = {
     const page = Math.max(1, params?.page ?? 1)
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
+    const reviewStatus = params?.reviewStatus ?? 'aprobada'
 
     let query = supabase
       .from('resources')
       .select(RESOURCE_SELECT, { count: 'exact' })
       .eq('category', 'habitaciones_escort')
-      .eq('status', 'aprobada')
+
+    if (reviewStatus === 'pendiente') query = query.eq('status', 'pendiente')
+    else if (reviewStatus === 'aprobada') query = query.eq('status', 'aprobada')
+    else query = query.in('status', ['pendiente', 'aprobada'])
+
+    query = query
+      .order('status', { ascending: true })
       .order('is_active', { ascending: false })
       .order('created_at', { ascending: false })
       .range(from, to)

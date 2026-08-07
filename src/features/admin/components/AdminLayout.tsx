@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, MapPin, Home } from 'lucide-react'
+import { LayoutDashboard, Users, MapPin, Home, MessageCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { adminService } from '@/services/admin.service'
@@ -9,6 +9,7 @@ const TABS = [
   { to: '/admin/users', label: 'Usuarios', icon: Users },
   { to: '/admin/cities', label: 'Ciudades', icon: MapPin },
   { to: '/admin/casas', label: 'Casas', icon: Home },
+  { to: '/admin/publicadores', label: 'Publicadores', icon: MessageCircle },
 ]
 
 export function AdminLayout() {
@@ -23,7 +24,7 @@ export function AdminLayout() {
       <div>
         <h1 className="page-title">Panel de administración</h1>
         <p className="text-muted-foreground">
-          Gestiona usuarios, ciudades y casas/habitaciones para escort.
+          Gestiona usuarios, ciudades, casas/habitaciones y publicadores recomendados.
         </p>
       </div>
 

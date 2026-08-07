@@ -135,6 +135,21 @@ export function Sidebar() {
           Ciudades
         </p>
         <ul className="space-y-0.5">
+          <li>
+            <button
+              type="button"
+              onClick={() => setSelectedCityId(null)}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
+                selectedCityId === null
+                  ? 'bg-accent/10 font-medium text-accent'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              )}
+            >
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Todas las ciudades</span>
+            </button>
+          </li>
           {cities.map((city) => (
             <li key={city.id}>
               <button
