@@ -4,6 +4,7 @@ import { AuthProvider } from '@/features/auth/hooks/useAuth'
 import { CityProvider } from '@/features/cities/context/CityContext'
 import { ThemeProvider } from '@/hooks/useTheme'
 import { DeviceGate } from '@/components/shared/DeviceGate'
+import { Analytics } from '@/components/shared/Analytics'
 import { AppRouter } from './router'
 
 const queryClient = new QueryClient({
@@ -20,6 +21,7 @@ export function AppProviders() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
+          <Analytics />
           <AuthProvider>
             <DeviceGate>
               <CityProvider>
