@@ -77,6 +77,7 @@ export interface RecommendedPublisher {
   name: string
   whatsapp: string
   note: string | null
+  logo_url: string | null
   is_active: boolean
   sort_order: number
   created_at: string
@@ -87,6 +88,7 @@ export interface CreateRecommendedPublisherInput {
   name: string
   whatsapp: string
   note?: string | null
+  logo_url?: string | null
   is_active?: boolean
   sort_order?: number
 }
@@ -95,6 +97,7 @@ export interface UpdateRecommendedPublisherInput {
   name?: string
   whatsapp?: string
   note?: string | null
+  logo_url?: string | null
   is_active?: boolean
   sort_order?: number
 }

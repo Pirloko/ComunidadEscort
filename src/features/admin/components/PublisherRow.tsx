@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2 } from 'lucide-react'
+import { Avatar } from '@/components/shared/Avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -43,20 +44,28 @@ export function PublisherRow({ publisher, onEdit }: PublisherRowProps) {
 
   return (
     <div className="flex flex-col gap-3 border-b px-4 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold">{publisher.name}</span>
-          <Badge variant="outline">#{publisher.sort_order}</Badge>
-          {!publisher.is_active && (
-            <Badge variant="outline" className="text-destructive">
-              Inactivo
-            </Badge>
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Avatar
+          src={publisher.logo_url}
+          alias={publisher.name}
+          size="md"
+          className="shrink-0 border border-white/10"
+        />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold">{publisher.name}</span>
+            <Badge variant="outline">#{publisher.sort_order}</Badge>
+            {!publisher.is_active && (
+              <Badge variant="outline" className="text-destructive">
+                Inactivo
+              </Badge>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">{publisher.whatsapp}</p>
+          {publisher.note && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{publisher.note}</p>
           )}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">{publisher.whatsapp}</p>
-        {publisher.note && (
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">{publisher.note}</p>
-        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-3">

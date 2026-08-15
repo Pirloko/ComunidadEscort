@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
+import { Camera, Loader2 } from 'lucide-react'
+import { Avatar } from '@/components/shared/Avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,6 +23,10 @@ interface PublisherFormProps {
 export function PublisherForm({ publisher, onClose }: PublisherFormProps) {
   const queryClient = useQueryClient()
   const isEdit = !!publisher
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(publisher?.logo_url ?? null)
+  const [removeLogo, setRemoveLogo] = useState(false)
 
   const {
     register,
@@ -42,6 +47,7 @@ export function PublisherForm({ publisher, onClose }: PublisherFormProps) {
   })
 
   const isActive = watch('is_active')
+  const nameWatch = watch('name')
 
   useEffect(() => {
     if (publisher) {
@@ -52,11 +58,14 @@ export function PublisherForm({ publisher, onClose }: PublisherFormProps) {
         is_active: publisher.is_active,
         sort_order: publisher.sort_order,
       })
+      setLogoPreview(publisher.logo_url)
+      setLogoFile(null)
+      setRemoveLogo(false)
     }
   }, [publisher, reset])
 
   const saveMutation = useMutation({
-    mutationFn: (data: PublisherFormData) => {
+    mutationFn: async (data: PublisherFormData) => {
       const payload = {
         name: data.name,
         whatsapp: data.whatsapp,
@@ -64,9 +73,18 @@ export function PublisherForm({ publisher, onClose }: PublisherFormProps) {
         is_active: data.is_active,
         sort_order: data.sort_order,
       }
-      return isEdit
-        ? publisherService.update(publisher!.id, payload)
-        : publisherService.create(payload)
+
+      let saved = isEdit
+        ? await publisherService.update(publisher!.id, payload)
+        : await publisherService.create(payload)
+
+      if (logoFile) {
+        saved = await publisherService.uploadLogo(saved.id, logoFile)
+      } else if (isEdit && removeLogo && publisher?.logo_url) {
+        saved = await publisherService.removeLogo(saved.id)
+      }
+
+      return saved
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-publishers'] })
@@ -74,6 +92,14 @@ export function PublisherForm({ publisher, onClose }: PublisherFormProps) {
       onClose()
     },
   })
+
+  const onPickLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoFile(file)
+    setRemoveLogo(false)
+    setLogoPreview(URL.createObjectURL(file))
+  }
 
   return (
     <form
@@ -83,6 +109,56 @@ export function PublisherForm({ publisher, onClose }: PublisherFormProps) {
       <h3 className="font-semibold">
         {isEdit ? 'Editar publicador' : 'Nuevo publicador'}
       </h3>
+
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <div className="relative">
+          <Avatar
+            src={removeLogo ? null : logoPreview}
+            alias={nameWatch || publisher?.name || 'P'}
+            size="lg"
+            className="h-16 w-16 border border-white/10"
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="secondary"
+            className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full"
+            onClick={() => fileRef.current?.click()}
+            aria-label="Subir logo"
+          >
+            <Camera className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium">Logo (opcional)</p>
+          <p className="text-xs text-muted-foreground">
+            Se muestra en círculo como foto de WhatsApp. JPG, PNG o WebP · máx. 2 MB.
+          </p>
+          {(logoPreview || publisher?.logo_url) && !removeLogo && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-0 text-destructive"
+              onClick={() => {
+                setLogoFile(null)
+                setRemoveLogo(true)
+                setLogoPreview(null)
+                if (fileRef.current) fileRef.current.value = ''
+              }}
+            >
+              Quitar logo
+            </Button>
+          )}
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={onPickLogo}
+        />
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="publisher-name">Nombre</Label>
@@ -125,7 +201,9 @@ export function PublisherForm({ publisher, onClose }: PublisherFormProps) {
           min={0}
           {...register('sort_order', { valueAsNumber: true })}
         />
-        <p className="text-xs text-muted-foreground">Menor número aparece más arriba en el home.</p>
+        <p className="text-xs text-muted-foreground">
+          En el home el orden es aleatorio; este valor solo ordena el listado admin.
+        </p>
         {errors.sort_order && (
           <p className="text-sm text-destructive">{errors.sort_order.message}</p>
         )}

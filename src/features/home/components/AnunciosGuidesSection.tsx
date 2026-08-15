@@ -1,17 +1,39 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { MessageCircle } from 'lucide-react'
+import { Avatar } from '@/components/shared/Avatar'
 import { Button } from '@/components/ui/button'
 import { ANUNCIOS_GUIDES, anunciosGuidePath } from '@/features/home/data/anuncios-guides'
 import { whatsappUrl } from '@/lib/habitaciones'
 import { publisherService } from '@/services/publisher.service'
+import type { RecommendedPublisher } from '@/types/admin'
+
+function shufflePublishers(list: RecommendedPublisher[]): RecommendedPublisher[] {
+  const next = [...list]
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[next[i], next[j]] = [next[j]!, next[i]!]
+  }
+  return next
+}
 
 /** Sección SEO en /home: guía de publicaciones en portales conocidos. */
 export function AnunciosGuidesSection() {
-  const { data: publishers = [] } = useQuery({
+  const { data: publishers = [], dataUpdatedAt } = useQuery({
     queryKey: ['recommended-publishers'],
     queryFn: () => publisherService.listActive(),
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
+
+  // Orden aleatorio en cada carga / refetch (el admin sigue usando sort_order).
+  const shuffledPublishers = useMemo(
+    () => shufflePublishers(publishers),
+    // dataUpdatedAt cambia en cada fetch → nueva mezcla al refrescar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [publishers, dataUpdatedAt],
+  )
 
   return (
     <section className="space-y-4" aria-labelledby="guia-publicaciones-title">
@@ -47,7 +69,7 @@ export function AnunciosGuidesSection() {
         ))}
       </div>
 
-      {publishers.length > 0 && (
+      {shuffledPublishers.length > 0 && (
         <div className="space-y-3 border-t border-white/8 pt-4" aria-labelledby="publicadores-title">
           <div className="space-y-1">
             <h3
@@ -60,11 +82,17 @@ export function AnunciosGuidesSection() {
           </div>
 
           <ul className="space-y-2">
-            {publishers.map((p) => (
+            {shuffledPublishers.map((p) => (
               <li
                 key={p.id}
                 className="flex items-center gap-3 rounded-xl border border-white/10 bg-card/70 px-3 py-2.5"
               >
+                <Avatar
+                  src={p.logo_url}
+                  alias={p.name}
+                  size="md"
+                  className="h-11 w-11 shrink-0 border border-white/10"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
                   {p.note && (

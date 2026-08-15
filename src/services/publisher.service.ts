@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { convertImageToWebp } from '@/lib/image-webp'
 import { normalizePhoneChile } from '@/lib/phone'
 import type {
   CreateRecommendedPublisherInput,
@@ -7,7 +8,11 @@ import type {
 } from '@/types/admin'
 
 const SELECT =
-  'id, name, whatsapp, note, is_active, sort_order, created_at, updated_at'
+  'id, name, whatsapp, note, logo_url, is_active, sort_order, created_at, updated_at'
+
+const LOGO_BUCKET = 'publisher-logos'
+const MAX_LOGO_SIZE = 2 * 1024 * 1024
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 function normalizeWhatsapp(phone: string): string {
   return normalizePhoneChile(phone)
@@ -42,6 +47,7 @@ export const publisherService = {
       name: input.name.trim(),
       whatsapp: normalizeWhatsapp(input.whatsapp),
       note: input.note?.trim() || null,
+      logo_url: input.logo_url ?? null,
       is_active: input.is_active ?? true,
       sort_order: input.sort_order ?? 0,
     }
@@ -66,6 +72,7 @@ export const publisherService = {
     if (input.name !== undefined) payload.name = input.name.trim()
     if (input.whatsapp !== undefined) payload.whatsapp = normalizeWhatsapp(input.whatsapp)
     if (input.note !== undefined) payload.note = input.note?.trim() || null
+    if (input.logo_url !== undefined) payload.logo_url = input.logo_url
     if (input.is_active !== undefined) payload.is_active = input.is_active
     if (input.sort_order !== undefined) payload.sort_order = input.sort_order
 
@@ -81,7 +88,54 @@ export const publisherService = {
   },
 
   async delete(id: string): Promise<void> {
+    const { data: row } = await supabase
+      .from('recommended_publishers')
+      .select('logo_url')
+      .eq('id', id)
+      .maybeSingle()
+
     const { error } = await supabase.from('recommended_publishers').delete().eq('id', id)
     if (error) throw error
+
+    if (row?.logo_url) {
+      await publisherService.removeLogoObject(id).catch(() => undefined)
+    }
+  },
+
+  /** Sube logo WebP y actualiza logo_url. Paths: {id}/logo.webp */
+  async uploadLogo(publisherId: string, file: File): Promise<RecommendedPublisher> {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      throw new Error('Formato no permitido. Usa JPG, PNG o WebP.')
+    }
+    if (file.size > MAX_LOGO_SIZE) {
+      throw new Error('La imagen no puede superar 2 MB.')
+    }
+
+    const webp = await convertImageToWebp(file, {
+      maxEdge: 512,
+      quality: 0.85,
+      maxOutputBytes: MAX_LOGO_SIZE,
+    })
+    const path = `${publisherId}/logo.webp`
+
+    const { error: uploadError } = await supabase.storage
+      .from(LOGO_BUCKET)
+      .upload(path, webp, { upsert: true, contentType: 'image/webp' })
+
+    if (uploadError) throw uploadError
+
+    const { data: pub } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(path)
+    const logoUrl = `${pub.publicUrl}?t=${Date.now()}`
+
+    return publisherService.update(publisherId, { logo_url: logoUrl })
+  },
+
+  async removeLogo(publisherId: string): Promise<RecommendedPublisher> {
+    await publisherService.removeLogoObject(publisherId)
+    return publisherService.update(publisherId, { logo_url: null })
+  },
+
+  async removeLogoObject(publisherId: string): Promise<void> {
+    await supabase.storage.from(LOGO_BUCKET).remove([`${publisherId}/logo.webp`])
   },
 }
