@@ -4,8 +4,11 @@ import { cn } from '@/lib/utils'
 import {
   APP_NAME,
   APP_LOGO_URL,
+  APP_LOGO_WEBP_URL,
   APP_LOGO_LIGHT_URL,
+  APP_LOGO_LIGHT_WEBP_URL,
   APP_LOGO_ICON_URL,
+  APP_LOGO_ICON_WEBP_URL,
 } from '@/lib/constants'
 
 type BrandLogoProps = {
@@ -23,6 +26,8 @@ type BrandLogoProps = {
    * auto = ambos assets; CSS elige según clase .dark
    */
   tone?: 'dark' | 'light' | 'auto'
+  /** Prioridad alta para LCP (header home) */
+  priority?: boolean
 }
 
 const SIZE_CLASS = {
@@ -37,6 +42,43 @@ const ICON_SIZE_CLASS = {
   lg: 'h-14 w-14',
 } as const
 
+function LogoPicture({
+  webp,
+  png,
+  alt,
+  className,
+  width,
+  height,
+  priority,
+  ariaHidden,
+}: {
+  webp: string
+  png: string
+  alt: string
+  className: string
+  width: number
+  height: number
+  priority?: boolean
+  ariaHidden?: boolean
+}) {
+  return (
+    <picture>
+      <source type="image/webp" srcSet={webp} />
+      <img
+        src={png}
+        alt={alt}
+        className={className}
+        width={width}
+        height={height}
+        decoding={priority ? 'sync' : 'async'}
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+        aria-hidden={ariaHidden || undefined}
+      />
+    </picture>
+  )
+}
+
 export function BrandLogo({
   variant = 'full',
   size = 'md',
@@ -44,6 +86,7 @@ export function BrandLogo({
   className,
   decorative = false,
   tone = 'auto',
+  priority = false,
 }: BrandLogoProps) {
   const imgClass = cn(
     'object-contain',
@@ -60,56 +103,61 @@ export function BrandLogo({
 
   if (variant === 'icon') {
     img = (
-      <img
-        src={APP_LOGO_ICON_URL}
+      <LogoPicture
+        webp={APP_LOGO_ICON_WEBP_URL}
+        png={APP_LOGO_ICON_URL}
         alt={APP_NAME}
         className={imgClass}
         width={112}
         height={112}
-        decoding="async"
+        priority={priority}
       />
     )
   } else if (tone === 'dark') {
     img = (
-      <img
-        src={APP_LOGO_URL}
+      <LogoPicture
+        webp={APP_LOGO_WEBP_URL}
+        png={APP_LOGO_URL}
         alt={APP_NAME}
         className={imgClass}
         width={280}
         height={80}
-        decoding="async"
+        priority={priority}
       />
     )
   } else if (tone === 'light') {
     img = (
-      <img
-        src={APP_LOGO_LIGHT_URL}
+      <LogoPicture
+        webp={APP_LOGO_LIGHT_WEBP_URL}
+        png={APP_LOGO_LIGHT_URL}
         alt={APP_NAME}
         className={imgClass}
         width={280}
         height={80}
-        decoding="async"
+        priority={priority}
       />
     )
   } else {
     img = (
       <span className="relative inline-flex items-center">
-        <img
-          src={APP_LOGO_LIGHT_URL}
+        <LogoPicture
+          webp={APP_LOGO_LIGHT_WEBP_URL}
+          png={APP_LOGO_LIGHT_URL}
           alt={APP_NAME}
           className={cn(imgClass, 'dark:hidden')}
           width={280}
           height={80}
-          decoding="async"
+          priority={priority}
         />
-        <img
-          src={APP_LOGO_URL}
+        <LogoPicture
+          webp={APP_LOGO_WEBP_URL}
+          png={APP_LOGO_URL}
           alt=""
-          aria-hidden
           className={cn(imgClass, 'hidden dark:block')}
           width={280}
           height={80}
-          decoding="async"
+          priority={priority}
+          ariaHidden
         />
       </span>
     )

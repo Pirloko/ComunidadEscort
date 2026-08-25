@@ -36,7 +36,7 @@ export const ANUNCIOS_GUIDES: AnunciosGuide[] = [
       'Chimbis es un portal de publicaciones y avisos destacados en Chile. La visibilidad de cada publicación depende del plan que elijas: zona, días, subidas y combos TOP / Destacado / Historias.',
     listadoImages: [
       {
-        src: '/guias/chimbis-listado.png',
+        src: '/guias/chimbis-listado.webp',
         alt: 'Ejemplos de publicaciones TOP, Destacado e Historias en el listado de Chimbis',
       },
     ],
@@ -76,7 +76,7 @@ export const ANUNCIOS_GUIDES: AnunciosGuide[] = [
       'En Skokka las publicaciones destacadas compiten por los primeros lugares del listado. El plan (TOP, Súper Top o Top All in One) y las subidas diarias definen cuánta visibilidad tiene tu aviso.',
     listadoImages: [
       {
-        src: '/guias/skokka-listado.png',
+        src: '/guias/skokka-listado.webp',
         alt: 'Ejemplos de publicaciones TOP, Súper Top y Top All in One en el listado de Skokka',
       },
     ],
@@ -129,7 +129,7 @@ export const ANUNCIOS_GUIDES: AnunciosGuide[] = [
       'En Locanto (locanto.cl) los avisos destacados duran 7 días y están visibles las 24 horas. Puedes elegir TOP, Galería o TOP + Galería; cada plan rota dentro de su categoría.',
     listadoImages: [
       {
-        src: '/guias/locanto-listado.png',
+        src: '/guias/locanto-listado.webp',
         alt: 'Ejemplos de publicaciones TOP y Galería en el listado de Locanto',
       },
     ],
@@ -170,7 +170,7 @@ export const ANUNCIOS_GUIDES: AnunciosGuide[] = [
       'En SimpleEscorts el plan más visible es Super Turbo: foto más grande, etiqueta propia, color distintivo y subidas automáticas en las franjas horarias que contrates.',
     listadoImages: [
       {
-        src: '/guias/simpleescorts-listado.png',
+        src: '/guias/simpleescorts-listado.webp',
         alt: 'Ejemplo de publicación Super Turbo en el listado de SimpleEscorts',
       },
     ],
@@ -216,15 +216,15 @@ export const ANUNCIOS_GUIDES: AnunciosGuide[] = [
       'En Escorcitas la visibilidad depende del plan: TOP, PREMIUM o GOLD. Cada uno tiene distinta etiqueta, cantidad de fotos/videos y rotación dentro de su propia categoría.',
     listadoImages: [
       {
-        src: '/guias/escorcitas-top.png',
+        src: '/guias/escorcitas-top.webp',
         alt: 'Publicación TOP en el listado de Escorcitas',
       },
       {
-        src: '/guias/escorcitas-premium.png',
+        src: '/guias/escorcitas-premium.webp',
         alt: 'Publicación PREMIUM en el listado de Escorcitas',
       },
       {
-        src: '/guias/escorcitas-gold.png',
+        src: '/guias/escorcitas-gold.webp',
         alt: 'Publicación GOLD en el listado de Escorcitas',
       },
     ],

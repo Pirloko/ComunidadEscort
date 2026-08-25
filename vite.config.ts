@@ -10,7 +10,15 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'logo-comunidad.png', 'logo-comunidad-light.png', 'logo-icon.png'],
+      includeAssets: [
+        'favicon.svg',
+        'logo-comunidad.png',
+        'logo-comunidad.webp',
+        'logo-comunidad-light.png',
+        'logo-comunidad-light.webp',
+        'logo-icon.png',
+        'logo-icon.webp',
+      ],
       manifest: {
         name: 'Comunidadescort.cl',
         short_name: 'Comunidad',

@@ -53,7 +53,7 @@ export function HomePage() {
 
       <header className="sticky top-0 z-40 border-b border-white/5 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-lg items-center justify-between gap-2 px-3 pt-[env(safe-area-inset-top,0px)] sm:h-[4.5rem]">
-          <BrandLogo size="lg" to="/home" tone="dark" className="h-12 max-w-[min(100%,240px)] sm:h-14 sm:max-w-[min(100%,280px)]" />
+          <BrandLogo size="lg" to="/home" tone="dark" priority className="h-12 max-w-[min(100%,240px)] sm:h-14 sm:max-w-[min(100%,280px)]" />
           <div className="flex shrink-0 items-center gap-1.5">
             {loggedIn && canEnter ? (
               <Button

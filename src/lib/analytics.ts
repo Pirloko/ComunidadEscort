@@ -20,15 +20,13 @@ export function getMeasurementId(): string | undefined {
 
 /**
  * Carga gtag.js una sola vez (GA4).
- * Importante: dataLayer debe recibir `arguments` (objeto), no un array
- * de rest params — si no, GA no procesa los hits.
+ * Stub inmediato + script diferido para no competir con LCP.
  */
 export function initAnalytics(): void {
   if (!isAnalyticsEnabled() || typeof window === 'undefined') return
   if (document.getElementById('ga4-gtag')) return
 
   window.dataLayer = window.dataLayer || []
-  // function (no arrow): necesitamos el objeto `arguments` nativo
   window.gtag = function gtag() {
     // eslint-disable-next-line prefer-rest-params
     window.dataLayer.push(arguments)
@@ -36,21 +34,30 @@ export function initAnalytics(): void {
 
   window.gtag('js', new Date())
   window.gtag('config', MEASUREMENT_ID, {
-    send_page_view: false, // SPA: page views vía trackPageView
+    send_page_view: false,
     anonymize_ip: true,
   })
 
-  const script = document.createElement('script')
-  script.id = 'ga4-gtag'
-  script.async = true
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`
-  document.head.appendChild(script)
+  const inject = () => {
+    if (document.getElementById('ga4-gtag')) return
+    const script = document.createElement('script')
+    script.id = 'ga4-gtag'
+    script.async = true
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`
+    document.head.appendChild(script)
+  }
+
+  // Diferir red de GA: prioriza paint / LCP
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(inject, { timeout: 3500 })
+  } else {
+    window.setTimeout(inject, 2000)
+  }
 }
 
 /** Page view para React Router (cambia la URL sin recargar). */
 export function trackPageView(path: string, title?: string): void {
   if (!isAnalyticsEnabled() || typeof window.gtag !== 'function') return
-  // `config` con page_path es el patrón recomendado para SPA en GA4
   window.gtag('config', MEASUREMENT_ID, {
     page_path: path,
     page_title: title ?? document.title,
