@@ -21,7 +21,9 @@ import { PUBLIC_HABITACIONES_PAGE_SIZE } from '@/lib/habitaciones'
 import {
   citySeoDescription,
   citySeoH1,
+  citySeoIntro,
   citySeoTitle,
+  buildCityJsonLd,
   habitacionesEscortCityPath,
   parseLegacyEscortCityPath,
   setDocumentMeta,
@@ -69,6 +71,8 @@ export function HabitacionesCityPage() {
     setDocumentMeta({
       title: citySeoTitle(city.name),
       description: citySeoDescription(city.name),
+      path: habitacionesEscortCityPath(city.slug),
+      jsonLd: buildCityJsonLd(city.name, city.slug, city.count),
     })
   }, [city])
 
@@ -136,26 +140,27 @@ export function HabitacionesCityPage() {
       <main className="relative mx-auto max-w-lg space-y-6 px-3 pb-[max(3rem,env(safe-area-inset-bottom))] pt-5">
         <Link to="/home" className="habitacion-back-link home-fade-up inline-flex">
           <ArrowLeft className="h-4 w-4" />
-          Todas las ciudades
+          Habitaciones para escort en Chile
         </Link>
 
         <header className="home-cities-intro space-y-2">
           <p className="home-cities-eyebrow">
-            <span className="home-cities-eyebrow-text">Habitaciones · Piezas</span>
+            <span className="home-cities-eyebrow-text">
+              Piezas y habitaciones · {city?.name ?? 'ciudad'}
+            </span>
           </p>
           <h1 className="home-display home-cities-title">
             {city ? citySeoH1(city.name) : 'Habitaciones y piezas para escort'}
           </h1>
-          <p className="page-subtitle">
-            Habitaciones o piezas para escort en {city?.name}. Publicaciones activas y contacto
-            directo.
-          </p>
           {city && (
-            <p className="text-sm text-muted-foreground">
-              {city.count}{' '}
-              {city.count === 1 ? 'publicación activa' : 'publicaciones activas'}
-            </p>
+            <p className="page-subtitle leading-relaxed">{citySeoIntro(city.name, city.count)}</p>
           )}
+          <p className="text-sm text-muted-foreground">
+            ¿Buscas en otra región?{' '}
+            <Link to="/home" className="font-medium text-primary underline-offset-2 hover:underline">
+              Ver habitaciones para escort en todo Chile
+            </Link>
+          </p>
         </header>
 
         <section

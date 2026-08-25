@@ -16,6 +16,12 @@
   [headers.values]
     Content-Type = "application/xml; charset=utf-8"
 
+# Canónica: / → /home (evita duplicar la home nacional en GSC)
+[[redirects]]
+  from = "/"
+  to = "/home"
+  status = 301
+
 # React Router (SPA): rutas client-side → index.html
 # (sin force: Netlify sirve robots.txt / sitemap.xml si existen en dist/)
 [[redirects]]

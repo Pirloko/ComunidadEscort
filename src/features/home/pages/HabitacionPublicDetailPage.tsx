@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -25,7 +26,7 @@ import {
   whatsappUrl,
 } from '@/lib/habitaciones'
 import { resourceService } from '@/services/resource.service'
-import { habitacionesEscortCityPath } from '@/lib/seo-habitaciones'
+import { habitacionesEscortCityPath, setDocumentMeta } from '@/lib/seo-habitaciones'
 import '@/features/home/home-landing.css'
 
 export function HabitacionPublicDetailPage() {
@@ -36,6 +37,22 @@ export function HabitacionPublicDetailPage() {
     queryFn: () => resourceService.getPublicHabitacionById(habitacionId!),
     enabled: !!habitacionId,
   })
+
+  useEffect(() => {
+    if (!habitacion) return
+    const cityName = habitacion.city?.name
+    const title = cityName
+      ? `${habitacion.name} — habitación para escort en ${cityName} | Comunidadescort`
+      : `${habitacion.name} — habitación para escort | Comunidadescort`
+    const description = cityName
+      ? `${habitacion.name}: habitación o pieza para escort en ${cityName}, Chile. Contacto directo y detalles en Comunidadescort.`
+      : `${habitacion.name}: habitación o pieza para escort en Chile. Contacto directo en Comunidadescort.`
+    setDocumentMeta({
+      title,
+      description,
+      path: `/home/habitaciones/${habitacion.id}`,
+    })
+  }, [habitacion])
 
   if (isLoading) {
     return (

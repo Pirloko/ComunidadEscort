@@ -15,7 +15,12 @@ import { SafetyTipsSection } from '@/features/home/components/SafetyTipsSection'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { canAccessCommunity } from '@/lib/account-access'
 import { APP_TAGLINE } from '@/lib/constants'
-import { habitacionesEscortCityPath, setDocumentMeta } from '@/lib/seo-habitaciones'
+import {
+  HOME_SEO,
+  buildHomeJsonLd,
+  habitacionesEscortCityPath,
+  setDocumentMeta,
+} from '@/lib/seo-habitaciones'
 import { cn } from '@/lib/utils'
 import { resourceService } from '@/services/resource.service'
 import '@/features/home/home-landing.css'
@@ -31,11 +36,12 @@ export function HomePage() {
 
   useEffect(() => {
     setDocumentMeta({
-      title: 'Habitaciones y piezas para escort en Chile | Comunidadescort',
-      description:
-        'Encuentra habitaciones o piezas para escort por ciudad en Chile. Destacadas, contacto directo y comunidad privada en Comunidadescort.cl.',
+      title: HOME_SEO.title,
+      description: HOME_SEO.description,
+      path: HOME_SEO.path,
+      jsonLd: buildHomeJsonLd(citiesWithRooms.map((c) => c.name)),
     })
-  }, [])
+  }, [citiesWithRooms])
 
   const loggedIn = !!session
   const canEnter = profile ? canAccessCommunity(profile) : false
@@ -86,16 +92,17 @@ export function HomePage() {
         <section id="habitaciones" className="scroll-mt-16 space-y-4">
           <div className="home-cities-intro">
             <p className="home-cities-eyebrow home-fade-up">
-              <span className="home-cities-eyebrow-text">Casas y Habitaciones para escort</span>
+              <span className="home-cities-eyebrow-text">Directorio nacional · Chile</span>
             </p>
-            <p className="home-cities-lead home-fade-up home-fade-up-delay-1">
-              Una nueva ciudad te espera: busca, contacta y cotiza tu próxima habitación. Únete a
-              la comunidad para dejar reseñas a las casas, funar clientes y construir juntas un
-              espacio más seguro.
-            </p>
-            <h1 className="home-display home-cities-title home-fade-up home-fade-up-delay-2">
-              Ciudades
+            <h1 className="home-display home-cities-title home-fade-up home-fade-up-delay-1">
+              Habitaciones para escort y piezas escort en Chile
             </h1>
+            <p className="home-cities-lead home-fade-up home-fade-up-delay-2">
+              Busca habitaciones para escort o piezas para escort por ciudad en todo Chile.
+              Contacta directo, cotiza hospedaje y elige la casa que mejor te acomode. Únete a la
+              comunidad para dejar reseñas, alertas de seguridad y apoyo entre colegas.
+            </p>
+            <h2 className="sr-only">Elige una ciudad</h2>
           </div>
 
           <div className="home-fade-up home-fade-up-delay-3 rounded-xl border border-white/8 bg-card/60 p-3 backdrop-blur-sm">

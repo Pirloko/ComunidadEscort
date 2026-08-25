@@ -8,7 +8,7 @@ import {
   anunciosGuidePath,
   getAnunciosGuideByPath,
 } from '@/features/home/data/anuncios-guides'
-import { setDocumentMeta } from '@/lib/seo-habitaciones'
+import { buildFaqPageJsonLd, setDocumentMeta } from '@/lib/seo-habitaciones'
 import '@/features/home/home-landing.css'
 
 export function AnunciosGuidePage() {
@@ -18,9 +18,17 @@ export function AnunciosGuidePage() {
 
   useEffect(() => {
     if (!guide) return
+    const path = `/${guide.path}`
+    const faqLd =
+      guide.ready && guide.faqs.length > 0
+        ? buildFaqPageJsonLd(`https://comunidadescort.cl${path}`, guide.faqs)
+        : null
     setDocumentMeta({
       title: `${guide.title} | Comunidadescort`,
       description: guide.description,
+      path,
+      noindex: !guide.ready,
+      jsonLd: faqLd,
     })
   }, [guide])
 
@@ -125,7 +133,7 @@ export function AnunciosGuidePage() {
             Otras guías de publicaciones
           </p>
           <div className="flex flex-wrap gap-2">
-            {ANUNCIOS_GUIDES.filter((g) => g.slug !== guide.slug).map((g) => (
+            {ANUNCIOS_GUIDES.filter((g) => g.slug !== guide.slug && g.ready).map((g) => (
               <Link
                 key={g.slug}
                 to={anunciosGuidePath(g)}
