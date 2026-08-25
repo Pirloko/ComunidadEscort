@@ -22,8 +22,8 @@
   to = "/home"
   status = 301
 
-# React Router (SPA): rutas client-side → index.html
-# (sin force: Netlify sirve robots.txt / sitemap.xml si existen en dist/)
+# React Router (SPA): rutas sin HTML estático → index.html
+# Las rutas SEO prerenderizadas viven en dist/<ruta>/index.html y tienen prioridad.
 [[redirects]]
   from = "/*"
   to = "/index.html"

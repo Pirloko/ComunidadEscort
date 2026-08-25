@@ -39,6 +39,14 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // No interceptar rutas con HTML SEO estático (prerender post-build)
+        navigateFallbackDenylist: [
+          /^\/home$/,
+          /^\/habitaciones-escort\//,
+          /^\/guia-publicaciones-/,
+          /^\/robots\.txt$/,
+          /^\/sitemap\.xml$/,
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
