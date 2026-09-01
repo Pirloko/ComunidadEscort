@@ -139,6 +139,16 @@ const AdminPublishersPage = lazy(() =>
     default: m.AdminPublishersPage,
   })),
 )
+const AdminBannersPage = lazy(() =>
+  import('@/features/admin/pages/AdminBannersPage').then((m) => ({
+    default: m.AdminBannersPage,
+  })),
+)
+const AdminContactMessagesPage = lazy(() =>
+  import('@/features/admin/pages/AdminContactMessagesPage').then((m) => ({
+    default: m.AdminContactMessagesPage,
+  })),
+)
 const MembersPage = lazy(() =>
   import('@/features/profile/pages/MembersPage').then((m) => ({ default: m.MembersPage })),
 )
@@ -332,6 +342,8 @@ export function AppRouter() {
           <Route path="casas/new" element={<S><AdminCasaFormPage /></S>} />
           <Route path="casas/:casaId/edit" element={<S><AdminCasaFormPage /></S>} />
           <Route path="publicadores" element={<S><AdminPublishersPage /></S>} />
+          <Route path="banners" element={<S><AdminBannersPage /></S>} />
+          <Route path="contacto" element={<S><AdminContactMessagesPage /></S>} />
         </Route>
         <Route path="/profile/edit" element={<S><EditProfilePage /></S>} />
         <Route path="/profile/:alias" element={<S><ProfilePage /></S>} />

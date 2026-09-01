@@ -490,6 +490,46 @@
   opacity: 0.35;
 }
 
+/* Carrusel publicitario superior del home */
+.home-promo-banner {
+  position: relative;
+}
+
+.home-promo-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, white 18%, transparent);
+  background: color-mix(in srgb, #0a0a0c 55%, transparent);
+  color: white;
+  backdrop-filter: blur(8px);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.home-promo-nav:hover {
+  border-color: color-mix(in srgb, #a78bfa 50%, transparent);
+  transform: translateY(-50%) scale(1.04);
+}
+
+.home-promo-nav-prev {
+  left: 0.5rem;
+}
+
+.home-promo-nav-next {
+  right: 0.5rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-fade-up,
   .home-fade-up-delay-1,

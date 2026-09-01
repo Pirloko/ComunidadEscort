@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Check, ExternalLink, Pause, Pencil, Play, Trash2, X } from 'lucide-react'
+import { Check, ExternalLink, ArrowUp, Pause, Pencil, Play, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatRelativeTime } from '@/lib/format'
@@ -40,6 +40,14 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
     onSuccess: invalidate,
   })
 
+  const toggleListingPriorityMutation = useMutation({
+    mutationFn: () =>
+      resourceService.updateResource(resource.id, {
+        is_listing_priority: !resource.is_listing_priority,
+      }),
+    onSuccess: invalidate,
+  })
+
   const approveMutation = useMutation({
     mutationFn: () =>
       resourceService.reviewResource(resource.id, user!.id, { status: 'aprobada' }),
@@ -63,6 +71,7 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
   const isPending =
     toggleActiveMutation.isPending ||
     togglePublicMutation.isPending ||
+    toggleListingPriorityMutation.isPending ||
     approveMutation.isPending ||
     rejectMutation.isPending ||
     deleteMutation.isPending
@@ -100,6 +109,11 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
           ) : null}
           {resource.is_verified && (
             <Badge className="bg-accent/20 text-accent">Verificada</Badge>
+          )}
+          {resource.is_listing_priority && (
+            <Badge variant="outline" className="border-primary/40 text-primary">
+              Primera en listado
+            </Badge>
           )}
         </div>
         <p className="mt-1 font-semibold">{resource.name}</p>
@@ -172,6 +186,17 @@ export function AdminCasaRow({ resource }: AdminCasaRowProps) {
               disabled={isPending}
             >
               {resource.is_public ? 'Ocultar de /home' : 'Publicar en /home'}
+            </Button>
+            <Button
+              variant={resource.is_listing_priority ? 'accent' : 'outline'}
+              size="sm"
+              className="gap-1"
+              onClick={() => toggleListingPriorityMutation.mutate()}
+              disabled={isPending}
+              title="Prioridad interna: aparece arriba en el listado de su ciudad"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+              {resource.is_listing_priority ? 'Quitar prioridad' : 'Primera en listado'}
             </Button>
             <Button
               variant="outline"

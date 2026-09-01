@@ -29,7 +29,7 @@ const RESOURCE_SELECT = `
   id, author_id, city_id, category, status, name, description,
   phone, address, website, latitude, longitude, google_maps_url,
   instagram_url, facebook_url, whatsapp_phone, contact_phone,
-  rating_avg, reviews_count, is_verified, is_active, is_public, house_rules,
+  rating_avg, reviews_count, is_verified, is_active, is_public, is_listing_priority, house_rules,
   recibe_mujer, recibe_hombre, recibe_trans, pide_reserva, pide_referencias,
   pide_doc_identidad, pide_link_publicacion, acepta_parejas, recibe_agencias,
   tiene_camaras_seguridad, tiene_wifi, tiene_bano_privado, tiene_extintor,
@@ -45,7 +45,7 @@ const PUBLIC_HABITACION_SELECT = `
   id, author_id, city_id, category, status, name, description,
   phone, address, website, latitude, longitude, google_maps_url,
   instagram_url, facebook_url, whatsapp_phone, contact_phone,
-  rating_avg, reviews_count, is_verified, is_active, is_public, house_rules,
+  rating_avg, reviews_count, is_verified, is_active, is_public, is_listing_priority, house_rules,
   recibe_mujer, recibe_hombre, recibe_trans, pide_reserva, pide_referencias,
   pide_doc_identidad, pide_link_publicacion, acepta_parejas, recibe_agencias,
   tiene_camaras_seguridad, tiene_wifi, tiene_bano_privado, tiene_extintor,
@@ -301,6 +301,7 @@ export const resourceService = {
       .select(RESOURCE_SELECT)
       .eq('status', 'aprobada')
       .eq('is_active', true)
+      .order('is_listing_priority', { ascending: false })
       .order('is_verified', { ascending: false })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
@@ -342,6 +343,7 @@ export const resourceService = {
       .select(RESOURCE_SELECT, { count: 'exact' })
       .eq('status', 'aprobada')
       .eq('is_active', true)
+      .order('is_listing_priority', { ascending: false })
       .order('is_verified', { ascending: false })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
@@ -419,6 +421,7 @@ export const resourceService = {
       .eq('is_public', true)
       .eq('is_active', true)
       .eq('status', 'aprobada')
+      .order('is_listing_priority', { ascending: false })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 

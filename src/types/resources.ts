@@ -62,6 +62,8 @@ export interface Resource extends HabitacionAttrs {
   reviews_count: number
   is_verified: boolean
   is_active: boolean
+  /** Solo admin: prioridad en listado por ciudad (sin badge público). */
+  is_listing_priority?: boolean
   reviewed_by: string | null
   reviewed_at: string | null
   rejection_reason: string | null
@@ -138,6 +140,7 @@ export interface UpdateResourceInput {
   video_url?: string | null
   is_verified?: boolean
   is_active?: boolean
+  is_listing_priority?: boolean
 }
 
 export interface ReviewResourceInput {

@@ -10,11 +10,12 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BrandLogo } from '@/components/shared/BrandLogo'
 import { DestacadasCarousel } from '@/features/home/components/DestacadasCarousel'
+import { HomePromoBannerCarousel } from '@/features/home/components/HomePromoBannerCarousel'
+import { HomeFooter } from '@/features/home/components/HomeFooter'
 import { AnunciosGuidesSection } from '@/features/home/components/AnunciosGuidesSection'
 import { SafetyTipsSection } from '@/features/home/components/SafetyTipsSection'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { canAccessCommunity } from '@/lib/account-access'
-import { APP_TAGLINE } from '@/lib/constants'
 import {
   HOME_SEO,
   buildHomeJsonLd,
@@ -89,6 +90,8 @@ export function HomePage() {
       </header>
 
       <main className="relative mx-auto max-w-lg space-y-8 px-3 pb-[max(3rem,env(safe-area-inset-bottom))] pt-5 sm:space-y-10 sm:pt-6">
+        <HomePromoBannerCarousel />
+
         <section id="habitaciones" className="scroll-mt-16 space-y-4">
           <div className="home-cities-intro">
             <p className="home-cities-eyebrow home-fade-up">
@@ -212,14 +215,7 @@ export function HomePage() {
           </div>
         </section>
 
-        <footer className="border-t border-white/5 pt-6 text-center">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-            {APP_TAGLINE}
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground/80">
-            Comunidad privada · Chile
-          </p>
-        </footer>
+        <HomeFooter />
       </main>
     </div>
   )

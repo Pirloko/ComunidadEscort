@@ -1,8 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, MapPin, Home, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Users, MapPin, Home, MessageCircle, ImageIcon, Inbox } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { adminService } from '@/services/admin.service'
+import { contactService } from '@/services/contact.service'
 
 const TABS = [
   { to: '/admin', label: 'Resumen', icon: LayoutDashboard, end: true },
@@ -10,6 +11,8 @@ const TABS = [
   { to: '/admin/cities', label: 'Ciudades', icon: MapPin },
   { to: '/admin/casas', label: 'Casas', icon: Home },
   { to: '/admin/publicadores', label: 'Publicadores', icon: MessageCircle },
+  { to: '/admin/banners', label: 'Banners', icon: ImageIcon },
+  { to: '/admin/contacto', label: 'Contacto', icon: Inbox },
 ]
 
 export function AdminLayout() {
@@ -19,12 +22,18 @@ export function AdminLayout() {
     refetchInterval: 30000,
   })
 
+  const { data: unreadContactCount = 0 } = useQuery({
+    queryKey: ['admin-contact-unread-count'],
+    queryFn: () => contactService.getUnreadCount(),
+    refetchInterval: 30000,
+  })
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="page-title">Panel de administración</h1>
         <p className="text-muted-foreground">
-          Gestiona usuarios, ciudades, casas/habitaciones y publicadores recomendados.
+          Gestiona usuarios, ciudades, casas, publicadores, banners y mensajes de contacto.
         </p>
       </div>
 
@@ -48,6 +57,11 @@ export function AdminLayout() {
             {to === '/admin/users' && pendingUsersCount > 0 && (
               <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {pendingUsersCount > 9 ? '9+' : pendingUsersCount}
+              </span>
+            )}
+            {to === '/admin/contacto' && unreadContactCount > 0 && (
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                {unreadContactCount > 9 ? '9+' : unreadContactCount}
               </span>
             )}
           </NavLink>
