@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase/client'
 import { convertImageToWebp } from '@/lib/image-webp'
 import {
+  detailPhotoPathToCardPath,
   isPublicStoragePath,
-  photoDisplayUrl,
   type PhotoDisplaySize,
 } from '@/lib/supabase-image'
 import {
@@ -116,6 +116,63 @@ function storagePathFromUrl(url: string, bucket = PHOTOS_BUCKET): string | null 
   return null
 }
 
+async function signStoragePaths(
+  paths: string[],
+  bucket = PHOTOS_BUCKET,
+  ttlSec = SIGNED_URL_TTL_SEC,
+): Promise<Map<string, string>> {
+  const unique = [...new Set(paths)]
+  if (!unique.length) return new Map()
+
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrls(unique, ttlSec)
+
+  const map = new Map<string, string>()
+  if (!error && data) {
+    for (const row of data) {
+      if (row.path && row.signedUrl && !row.error) {
+        map.set(row.path, row.signedUrl)
+      }
+    }
+  }
+  return map
+}
+
+/**
+ * Bucket resource-photos es privado (00037): /object/public/ no sirve.
+ * Firma paths; en cards intenta -card.webp con fallback a la foto original.
+ */
+async function signPhotoPathsForDisplay(
+  paths: string[],
+  size: PhotoDisplaySize = 'full',
+): Promise<Map<string, { url: string; fallbackUrl?: string }>> {
+  const unique = [...new Set(paths)]
+  const toSign = new Set<string>()
+
+  for (const p of unique) {
+    if (size === 'card' && isPublicStoragePath(p)) {
+      toSign.add(detailPhotoPathToCardPath(p))
+    }
+    toSign.add(p)
+  }
+
+  const signed = await signStoragePaths([...toSign])
+  const out = new Map<string, { url: string; fallbackUrl?: string }>()
+
+  for (const p of unique) {
+    const full = signed.get(p)
+    if (size === 'card' && isPublicStoragePath(p)) {
+      const card = signed.get(detailPhotoPathToCardPath(p))
+      if (card) {
+        out.set(p, { url: card, fallbackUrl: full })
+        continue
+      }
+    }
+    if (full) out.set(p, { url: full })
+  }
+
+  return out
+}
+
 async function resolvePhotoUrls(
   photos: ResourcePhoto[] | undefined,
   options?: { size?: PhotoDisplaySize },
@@ -134,32 +191,18 @@ async function resolvePhotoUrls(
   ]
   if (paths.length === 0) return []
 
-  const publicPaths = paths.filter((p) => isPublicStoragePath(p))
-  const privatePaths = paths.filter((p) => !isPublicStoragePath(p))
-  const urlByPath = new Map<string, string>()
-
-  for (const p of publicPaths) {
-    urlByPath.set(p, photoDisplayUrl(p, size))
-  }
-
-  if (privatePaths.length > 0) {
-    const { data, error } = await supabase.storage
-      .from(PHOTOS_BUCKET)
-      .createSignedUrls(privatePaths, SIGNED_URL_TTL_SEC)
-
-    if (!error && data) {
-      for (const row of data) {
-        if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
-      }
-    }
-  }
+  const signed = await signPhotoPathsForDisplay(paths, size)
 
   return withPaths
     .map(({ photo, path }) => {
       if (!path) return null
-      const url = urlByPath.get(path)
-      if (!url) return null
-      return { ...photo, url }
+      const entry = signed.get(path)
+      if (!entry) return null
+      return {
+        ...photo,
+        url: entry.url,
+        ...(entry.fallbackUrl ? { fallback_url: entry.fallbackUrl } : {}),
+      }
     })
     .filter((p): p is ResourcePhoto => p !== null)
 }
@@ -201,7 +244,7 @@ async function withSignedPhotos(resource: Resource): Promise<Resource> {
   return sorted
 }
 
-/** Listado: covers con URL pública cacheable; sin firmar videos (evita payload MP4 en home). */
+/** Listado: cover firmado (bucket privado); sin firmar videos (evita payload MP4 en home). */
 async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
   const prepared = resources.map((resource) => {
     const sorted = sortPhotos({
@@ -215,33 +258,16 @@ async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
   })
 
   const paths = [...new Set(prepared.map((p) => p.path).filter((p): p is string => !!p))]
-  const publicPaths = paths.filter((p) => isPublicStoragePath(p))
-  const privatePaths = paths.filter((p) => !isPublicStoragePath(p))
-  const urlByPath = new Map<string, string>()
-
-  for (const p of publicPaths) {
-    urlByPath.set(p, photoDisplayUrl(p, 'card'))
-  }
-
-  if (privatePaths.length > 0) {
-    const { data } = await supabase.storage
-      .from(PHOTOS_BUCKET)
-      .createSignedUrls(privatePaths, SIGNED_URL_TTL_SEC)
-    for (const row of data ?? []) {
-      if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
-    }
-  }
+  const signed = await signPhotoPathsForDisplay(paths, 'card')
 
   return prepared.map(({ resource, cover, path, hadVideoOnly }) => {
-    const hasCover = !!(cover && path && urlByPath.has(path))
-    if (hasCover) {
+    const entry = path ? signed.get(path) : undefined
+    if (cover && path && entry) {
       resource.photos = [
         {
-          ...cover!,
-          url: urlByPath.get(path!)!,
-          fallback_url: isPublicStoragePath(path!)
-            ? photoDisplayUrl(path!, 'full')
-            : undefined,
+          ...cover,
+          url: entry.url,
+          ...(entry.fallbackUrl ? { fallback_url: entry.fallbackUrl } : {}),
         },
       ]
     } else {

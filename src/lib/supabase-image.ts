@@ -1,5 +1,7 @@
 /**
- * URLs de Storage Supabase optimizadas para caché CDN y tamaños de display.
+ * Helpers de paths/URLs de Storage.
+ * El bucket resource-photos es privado (migración 00037): las lecturas en runtime
+ * deben usar createSignedUrl en resource.service — no /object/public/ en el cliente.
  */
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/$/, '')
