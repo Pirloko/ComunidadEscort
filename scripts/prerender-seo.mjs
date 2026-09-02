@@ -145,7 +145,12 @@ async function main() {
     process.exit(1)
   }
 
-  const homeLcp = await fetchHomeLcp()
+  let homeLcp = null
+  try {
+    homeLcp = await fetchHomeLcp()
+  } catch (err) {
+    console.warn('[prerender-seo] LCP home omitido:', err instanceof Error ? err.message : err)
+  }
   if (homeLcp) {
     console.log(`[prerender-seo] LCP home: ${homeLcp.title}`)
   }
