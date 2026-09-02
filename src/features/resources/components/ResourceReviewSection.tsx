@@ -25,19 +25,16 @@ interface ResourceReviewSectionProps {
 
 const MAX_PHOTOS = 3
 
-export function ResourceReviewSection({
-  resourceId,
-  reviews,
-  enriched = false,
-  resourceName,
-  sharePath,
-}: ResourceReviewSectionProps) {
-  const { user, profile } = useAuth()
-  const queryClient = useQueryClient()
-  const isMod = profile?.role === 'moderator' || profile?.role === 'admin'
-  const fileRef = useRef<HTMLInputElement>(null)
+interface MyReviewFormProps {
+  resourceId: string
+  myReview?: ResourceReview
+  enriched: boolean
+  userId: string
+  onSaved: () => void
+}
 
-  const myReview = reviews.find((r) => r.author_id === user?.id)
+function MyReviewForm({ resourceId, myReview, enriched, userId, onSaved }: MyReviewFormProps) {
+  const fileRef = useRef<HTMLInputElement>(null)
   const [rating, setRating] = useState(myReview?.rating ?? 0)
   const [body, setBody] = useState(myReview?.body ?? '')
   const [serviceNotes, setServiceNotes] = useState(myReview?.service_notes ?? '')
@@ -46,26 +43,11 @@ export function ResourceReviewSection({
     () => myReview?.photos?.map((p) => p.storage_path) ?? [],
   )
   const [keepPreviews, setKeepPreviews] = useState<{ path: string; url?: string }[]>(
-    () =>
-      myReview?.photos?.map((p) => ({ path: p.storage_path, url: p.url })) ?? [],
+    () => myReview?.photos?.map((p) => ({ path: p.storage_path, url: p.url })) ?? [],
   )
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [newPreviews, setNewPreviews] = useState<string[]>([])
   const [formError, setFormError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setRating(myReview?.rating ?? 0)
-    setBody(myReview?.body ?? '')
-    setServiceNotes(myReview?.service_notes ?? '')
-    setOwnerNotes(myReview?.owner_notes ?? '')
-    setKeepPaths(myReview?.photos?.map((p) => p.storage_path) ?? [])
-    setKeepPreviews(myReview?.photos?.map((p) => ({ path: p.storage_path, url: p.url })) ?? [])
-    setNewFiles([])
-    setNewPreviews((prev) => {
-      prev.forEach((u) => URL.revokeObjectURL(u))
-      return []
-    })
-  }, [myReview?.id, myReview?.rating, myReview?.body, myReview?.service_notes, myReview?.owner_notes])
 
   useEffect(() => {
     return () => {
@@ -73,14 +55,9 @@ export function ResourceReviewSection({
     }
   }, [newPreviews])
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['resource-reviews', resourceId] })
-    queryClient.invalidateQueries({ queryKey: ['resource', resourceId] })
-  }
-
   const upsertMutation = useMutation({
     mutationFn: async () => {
-      const review = await resourceReviewService.upsertReview(resourceId, user!.id, {
+      const review = await resourceReviewService.upsertReview(resourceId, userId, {
         rating,
         body: body || null,
         service_notes: enriched ? serviceNotes || null : null,
@@ -98,13 +75,8 @@ export function ResourceReviewSection({
         prev.forEach((u) => URL.revokeObjectURL(u))
         return []
       })
-      invalidate()
+      onSaved()
     },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (reviewId: string) => resourceReviewService.deleteReview(reviewId),
-    onSuccess: invalidate,
   })
 
   const totalPhotos = keepPaths.length + newFiles.length
@@ -156,6 +128,133 @@ export function ResourceReviewSection({
     }
     upsertMutation.mutate()
   }
+
+  return (
+    <div className="space-y-3 border-t pt-4">
+      <p className="text-sm font-medium">{myReview ? 'Edita tu reseña' : 'Deja tu reseña'}</p>
+      <div>
+        <Label className="text-xs text-muted-foreground">Puntuación (0 a 5)</Label>
+        <StarRating value={rating} onChange={setRating} allowZero={enriched} className="mt-1" />
+      </div>
+
+      {enriched && (
+        <>
+          <div className="space-y-1.5">
+            <Label htmlFor="service_notes">¿Cómo fue el servicio / la estadía?</Label>
+            <Textarea
+              id="service_notes"
+              placeholder="Limpieza, seguridad, comodidad, reglas de la casa…"
+              rows={3}
+              value={serviceNotes}
+              onChange={(e) => setServiceNotes(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="owner_notes">¿Cómo fue el trato con la dueña?</Label>
+            <Textarea
+              id="owner_notes"
+              placeholder="Comunicación, respeto, confianza, problemas…"
+              rows={3}
+              value={ownerNotes}
+              onChange={(e) => setOwnerNotes(e.target.value)}
+            />
+          </div>
+        </>
+      )}
+
+      <Textarea
+        placeholder={enriched ? 'Comentario extra (opcional)' : 'Cuéntanos tu experiencia (opcional)'}
+        rows={enriched ? 2 : 3}
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+      />
+
+      {enriched && (
+        <div className="space-y-2">
+          <Label>Fotos (máx. {MAX_PHOTOS})</Label>
+          <div className="flex flex-wrap gap-2">
+            {keepPreviews.map((p) => (
+              <div key={p.path} className="relative h-20 w-20 overflow-hidden rounded-lg border">
+                {p.url && <img src={p.url} alt="" className="h-full w-full object-cover" />}
+                <button
+                  type="button"
+                  className="absolute right-0.5 top-0.5 rounded-full bg-black/70 p-0.5 text-white"
+                  onClick={() => removeKeep(p.path)}
+                  aria-label="Quitar foto"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            {newPreviews.map((url, i) => (
+              <div key={url} className="relative h-20 w-20 overflow-hidden rounded-lg border">
+                <img src={url} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  className="absolute right-0.5 top-0.5 rounded-full bg-black/70 p-0.5 text-white"
+                  onClick={() => removeNew(i)}
+                  aria-label="Quitar foto"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            {totalPhotos < MAX_PHOTOS && (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground hover:bg-muted/50"
+              >
+                <ImagePlus className="h-5 w-5" />
+                <span className="text-[10px]">Agregar</span>
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              handleAddFiles(e.target.files)
+              e.target.value = ''
+            }}
+          />
+        </div>
+      )}
+
+      {formError && <p className="text-sm text-destructive">{formError}</p>}
+      <Button size="sm" onClick={handleSubmit} disabled={upsertMutation.isPending}>
+        {upsertMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+        {myReview ? 'Actualizar reseña' : 'Publicar reseña'}
+      </Button>
+    </div>
+  )
+}
+
+export function ResourceReviewSection({
+  resourceId,
+  reviews,
+  enriched = false,
+  resourceName,
+  sharePath,
+}: ResourceReviewSectionProps) {
+  const { user, profile } = useAuth()
+  const queryClient = useQueryClient()
+  const isMod = profile?.role === 'moderator' || profile?.role === 'admin'
+
+  const myReview = reviews.find((r) => r.author_id === user?.id)
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['resource-reviews', resourceId] })
+    queryClient.invalidateQueries({ queryKey: ['resource', resourceId] })
+  }
+
+  const deleteMutation = useMutation({
+    mutationFn: (reviewId: string) => resourceReviewService.deleteReview(reviewId),
+    onSuccess: invalidate,
+  })
 
   if (!user) {
     return (
@@ -263,111 +362,14 @@ export function ResourceReviewSection({
         </div>
       )}
 
-      <div className="space-y-3 border-t pt-4">
-        <p className="text-sm font-medium">{myReview ? 'Edita tu reseña' : 'Deja tu reseña'}</p>
-        <div>
-          <Label className="text-xs text-muted-foreground">Puntuación (0 a 5)</Label>
-          <StarRating
-            value={rating}
-            onChange={setRating}
-            allowZero={enriched}
-            className="mt-1"
-          />
-        </div>
-
-        {enriched && (
-          <>
-            <div className="space-y-1.5">
-              <Label htmlFor="service_notes">¿Cómo fue el servicio / la estadía?</Label>
-              <Textarea
-                id="service_notes"
-                placeholder="Limpieza, seguridad, comodidad, reglas de la casa…"
-                rows={3}
-                value={serviceNotes}
-                onChange={(e) => setServiceNotes(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="owner_notes">¿Cómo fue el trato con la dueña?</Label>
-              <Textarea
-                id="owner_notes"
-                placeholder="Comunicación, respeto, confianza, problemas…"
-                rows={3}
-                value={ownerNotes}
-                onChange={(e) => setOwnerNotes(e.target.value)}
-              />
-            </div>
-          </>
-        )}
-
-        <Textarea
-          placeholder={enriched ? 'Comentario extra (opcional)' : 'Cuéntanos tu experiencia (opcional)'}
-          rows={enriched ? 2 : 3}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-        />
-
-        {enriched && (
-          <div className="space-y-2">
-            <Label>Fotos (máx. {MAX_PHOTOS})</Label>
-            <div className="flex flex-wrap gap-2">
-              {keepPreviews.map((p) => (
-                <div key={p.path} className="relative h-20 w-20 overflow-hidden rounded-lg border">
-                  {p.url && <img src={p.url} alt="" className="h-full w-full object-cover" />}
-                  <button
-                    type="button"
-                    className="absolute right-0.5 top-0.5 rounded-full bg-black/70 p-0.5 text-white"
-                    onClick={() => removeKeep(p.path)}
-                    aria-label="Quitar foto"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-              {newPreviews.map((url, i) => (
-                <div key={url} className="relative h-20 w-20 overflow-hidden rounded-lg border">
-                  <img src={url} alt="" className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    className="absolute right-0.5 top-0.5 rounded-full bg-black/70 p-0.5 text-white"
-                    onClick={() => removeNew(i)}
-                    aria-label="Quitar foto"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-              {totalPhotos < MAX_PHOTOS && (
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-muted-foreground hover:bg-muted/50"
-                >
-                  <ImagePlus className="h-5 w-5" />
-                  <span className="text-[10px]">Agregar</span>
-                </button>
-              )}
-            </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                handleAddFiles(e.target.files)
-                e.target.value = ''
-              }}
-            />
-          </div>
-        )}
-
-        {formError && <p className="text-sm text-destructive">{formError}</p>}
-        <Button size="sm" onClick={handleSubmit} disabled={upsertMutation.isPending}>
-          {upsertMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          {myReview ? 'Actualizar reseña' : 'Publicar reseña'}
-        </Button>
-      </div>
+      <MyReviewForm
+        key={myReview?.id ?? 'new'}
+        resourceId={resourceId}
+        myReview={myReview}
+        enriched={enriched}
+        userId={user.id}
+        onSaved={invalidate}
+      />
     </div>
   )
 }

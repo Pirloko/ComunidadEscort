@@ -2,10 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, Play, Expand, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-  HABITACION_DEFAULT_COVER,
-  HabitacionPhotoSeal,
-} from '@/features/home/components/HabitacionPhotoSeal'
+import { HABITACION_DEFAULT_COVER } from '@/features/home/lib/habitacion-cover'
+import { HabitacionPhotoSeal } from '@/features/home/components/HabitacionPhotoSeal'
 import type { ResourcePhoto } from '@/types/resources'
 
 type MediaItem =

@@ -6,8 +6,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   HabitacionCardCover,
   HabitacionVideoPlayBadge,
-  isHabitacionVideoCover,
 } from '@/features/home/components/HabitacionCardCover'
+import { isHabitacionVideoCover } from '@/features/home/lib/habitacion-cover'
 import { FEATURED_HABITACIONES_LIMIT } from '@/lib/habitaciones'
 import { cn } from '@/lib/utils'
 import { resourceService } from '@/services/resource.service'

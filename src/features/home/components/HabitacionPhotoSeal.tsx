@@ -1,8 +1,5 @@
 import { cn } from '@/lib/utils'
 
-/** Imagen por defecto cuando una habitación no tiene fotos. */
-export const HABITACION_DEFAULT_COVER = '/habitacion-default.jpg'
-
 interface HabitacionPhotoSealProps {
   className?: string
   compact?: boolean
@@ -28,8 +25,4 @@ export function HabitacionPhotoSeal({ className, compact = false }: HabitacionPh
       </span>
     </div>
   )
-}
-
-export function habitacionCoverUrl(photos?: { url: string }[] | null): string {
-  return photos?.[0]?.url || HABITACION_DEFAULT_COVER
 }

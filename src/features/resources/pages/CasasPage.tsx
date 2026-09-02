@@ -34,19 +34,18 @@ export function CasasPage() {
   const [cityQuery, setCityQuery] = useState('')
   const [selectedCity, setSelectedCity] = useState<City | null>(null)
   const [cityMenuOpen, setCityMenuOpen] = useState(false)
-  const [page, setPage] = useState(1)
+  const [pageByFilter, setPageByFilter] = useState<Record<string, number>>({})
   const listRef = useRef<HTMLElement>(null)
   const cityBoxRef = useRef<HTMLDivElement>(null)
+
+  const filterKey = `${recibe}|${soloParejas}|${selectedCity?.id ?? ''}`
+  const page = pageByFilter[filterKey] ?? 1
 
   const citySuggestions = useMemo(() => {
     const q = cityQuery.trim().toLowerCase()
     if (!q || selectedCity) return []
     return cities.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8)
   }, [cities, cityQuery, selectedCity])
-
-  useEffect(() => {
-    setPage(1)
-  }, [recibe, soloParejas, selectedCity?.id])
 
   useEffect(() => {
     const onPointerDown = (e: MouseEvent) => {
@@ -77,10 +76,11 @@ export function CasasPage() {
   const habitaciones = data?.items ?? []
   const total = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / CASAS_PAGE_SIZE))
+  const queryPage = Math.min(Math.max(1, page), totalPages)
 
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages)
-  }, [page, totalPages])
+  const setPage = (next: number) => {
+    setPageByFilter((prev) => ({ ...prev, [filterKey]: next }))
+  }
 
   const goToPage = (next: number) => {
     setPage(next)
@@ -242,7 +242,7 @@ export function CasasPage() {
         {!isError && habitaciones.length > 0 && (
           <div className={`space-y-4 ${isFetching && !isLoading ? 'opacity-70' : ''}`}>
             <p className="text-sm text-muted-foreground">
-              Página {page} de {totalPages}
+              Página {queryPage} de {totalPages}
               {total > 0 ? ` · ${total} publicación${total !== 1 ? 'es' : ''}` : ''}
               {selectedCity ? ` · ${selectedCity.name}` : ''}
             </p>
@@ -267,8 +267,8 @@ export function CasasPage() {
                   size="sm"
                   variant="outline"
                   className="habitacion-page-btn"
-                  disabled={page <= 1}
-                  onClick={() => goToPage(page - 1)}
+                  disabled={queryPage <= 1}
+                  onClick={() => goToPage(queryPage - 1)}
                   aria-label="Página anterior"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -278,11 +278,11 @@ export function CasasPage() {
                     key={p}
                     type="button"
                     size="sm"
-                    variant={p === page ? 'accent' : 'outline'}
+                    variant={p === queryPage ? 'accent' : 'outline'}
                     className="habitacion-page-btn min-w-9"
                     onClick={() => goToPage(p)}
                     aria-label={`Página ${p}`}
-                    aria-current={p === page ? 'page' : undefined}
+                    aria-current={p === queryPage ? 'page' : undefined}
                   >
                     {p}
                   </Button>
@@ -292,8 +292,8 @@ export function CasasPage() {
                   size="sm"
                   variant="outline"
                   className="habitacion-page-btn"
-                  disabled={page >= totalPages}
-                  onClick={() => goToPage(page + 1)}
+                  disabled={queryPage >= totalPages}
+                  onClick={() => goToPage(queryPage + 1)}
                   aria-label="Página siguiente"
                 >
                   <ChevronRight className="h-4 w-4" />

@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button'
 import {
   HabitacionCardCover,
   HabitacionVideoPlayBadge,
-  isHabitacionVideoCover,
 } from '@/features/home/components/HabitacionCardCover'
+import { isHabitacionVideoCover } from '@/features/home/lib/habitacion-cover'
 import { getRecibeALabel, whatsappUrl, habitacionWhatsappPhone } from '@/lib/habitaciones'
 import { BookmarkButton } from '@/features/bookmarks/components/BookmarkButton'
 import type { Resource } from '@/types/resources'

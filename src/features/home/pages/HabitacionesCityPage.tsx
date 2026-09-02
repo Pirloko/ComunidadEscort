@@ -34,8 +34,7 @@ import '@/features/home/home-landing.css'
 export function HabitacionesCityPage() {
   const { citySlug } = useParams<{ citySlug: string }>()
   const { session, profile } = useAuth()
-  const [page, setPage] = useState(1)
-  const listRef = useRef<HTMLElement>(null)
+  const [pageByCity, setPageByCity] = useState<Record<string, number>>({})
 
   const { data: citiesWithRooms = [], isLoading: loadingCities } = useQuery({
     queryKey: ['public-habitacion-cities'],
@@ -45,22 +44,22 @@ export function HabitacionesCityPage() {
   const city = citiesWithRooms.find((c) => c.slug === citySlug)
   const total = city?.count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PUBLIC_HABITACIONES_PAGE_SIZE))
+  const page = citySlug ? (pageByCity[citySlug] ?? 1) : 1
+  const queryPage = Math.min(Math.max(1, page), totalPages)
+  const listRef = useRef<HTMLElement>(null)
 
-  useEffect(() => {
-    setPage(1)
-  }, [citySlug])
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages)
-  }, [page, totalPages])
+  const setPage = (next: number) => {
+    if (!citySlug) return
+    setPageByCity((prev) => ({ ...prev, [citySlug]: next }))
+  }
 
   const { data: habitaciones = [], isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey: ['public-habitaciones', 'city', city?.id, page],
+    queryKey: ['public-habitaciones', 'city', city?.id, queryPage],
     queryFn: () =>
       resourceService.getPublicHabitaciones({
         cityId: city!.id,
         limit: PUBLIC_HABITACIONES_PAGE_SIZE,
-        offset: (page - 1) * PUBLIC_HABITACIONES_PAGE_SIZE,
+        offset: (queryPage - 1) * PUBLIC_HABITACIONES_PAGE_SIZE,
       }),
     enabled: !!city?.id,
     placeholderData: (prev) => prev,
@@ -199,7 +198,7 @@ export function HabitacionesCityPage() {
           {!isError && habitaciones.length > 0 && (
             <div className={`space-y-4 ${isFetching && !isLoading ? 'opacity-70' : ''}`}>
               <p className="text-sm text-muted-foreground">
-                Página {page} de {totalPages}
+                Página {queryPage} de {totalPages}
                 {total > 0 ? ` · ${total} publicación${total !== 1 ? 'es' : ''}` : ''}
               </p>
               {habitaciones.map((h) => (
@@ -219,8 +218,8 @@ export function HabitacionesCityPage() {
                     size="sm"
                     variant="outline"
                     className="habitacion-page-btn"
-                    disabled={page <= 1}
-                    onClick={() => goToPage(page - 1)}
+                    disabled={queryPage <= 1}
+                    onClick={() => goToPage(queryPage - 1)}
                     aria-label="Página anterior"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -230,11 +229,11 @@ export function HabitacionesCityPage() {
                       key={p}
                       type="button"
                       size="sm"
-                      variant={p === page ? 'accent' : 'outline'}
+                      variant={p === queryPage ? 'accent' : 'outline'}
                       className="habitacion-page-btn min-w-9"
                       onClick={() => goToPage(p)}
                       aria-label={`Página ${p}`}
-                      aria-current={p === page ? 'page' : undefined}
+                      aria-current={p === queryPage ? 'page' : undefined}
                     >
                       {p}
                     </Button>
@@ -244,8 +243,8 @@ export function HabitacionesCityPage() {
                     size="sm"
                     variant="outline"
                     className="habitacion-page-btn"
-                    disabled={page >= totalPages}
-                    onClick={() => goToPage(page + 1)}
+                    disabled={queryPage >= totalPages}
+                    onClick={() => goToPage(queryPage + 1)}
                     aria-label="Página siguiente"
                   >
                     <ChevronRight className="h-4 w-4" />

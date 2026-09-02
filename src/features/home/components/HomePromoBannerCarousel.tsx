@@ -58,7 +58,8 @@ export function HomePromoBannerCarousel() {
   })
 
   const count = banners.length
-  const current = banners[active]
+  const activeIndex = count > 0 ? ((active % count) + count) % count : 0
+  const current = banners[activeIndex]
 
   const goTo = useCallback(
     (index: number) => {
@@ -68,18 +69,14 @@ export function HomePromoBannerCarousel() {
     [count],
   )
 
-  const goNext = useCallback(() => goTo(active + 1), [active, goTo])
-  const goPrev = useCallback(() => goTo(active - 1), [active, goTo])
+  const goNext = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo])
+  const goPrev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo])
 
   useEffect(() => {
     if (count <= 1 || paused) return
     const id = window.setInterval(goNext, AUTO_MS)
     return () => window.clearInterval(id)
   }, [count, paused, goNext])
-
-  useEffect(() => {
-    if (active >= count && count > 0) setActive(0)
-  }, [active, count])
 
   if (!isLoading && count === 0) return null
 
@@ -110,7 +107,7 @@ export function HomePromoBannerCarousel() {
                   key={current.id}
                   className="home-promo-slide-enter absolute inset-0"
                 >
-                  <BannerSlide banner={current} priority={active === 0} />
+                  <BannerSlide banner={current} priority={activeIndex === 0} />
                 </div>
               )}
             </div>
@@ -147,7 +144,7 @@ export function HomePromoBannerCarousel() {
                       className="carousel-dot"
                       onClick={() => goTo(i)}
                       aria-label={`Ir al banner ${i + 1}: ${banner.title}`}
-                      aria-selected={i === active}
+                      aria-selected={i === activeIndex}
                     >
                       <span className="carousel-dot-indicator" aria-hidden="true" />
                     </button>

@@ -1,18 +1,10 @@
 import { Play } from 'lucide-react'
 import {
   HabitacionPhotoSeal,
-  HABITACION_DEFAULT_COVER,
 } from '@/features/home/components/HabitacionPhotoSeal'
+import { HABITACION_DEFAULT_COVER } from '@/features/home/lib/habitacion-cover'
 import { cn } from '@/lib/utils'
 import type { ResourcePhoto } from '@/types/resources'
-
-export function isHabitacionVideoCover(
-  photos?: Pick<ResourcePhoto, 'url'>[] | null,
-  videoUrl?: string | null,
-  hasVideoCover?: boolean,
-): boolean {
-  return hasVideoCover || (!photos?.[0]?.url && !!videoUrl)
-}
 
 interface HabitacionCardCoverProps {
   photos?: ResourcePhoto[] | null

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, Send, Smile, Sticker, ImagePlay, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,28 +31,27 @@ export function ChatComposer({ disabled, sending, onSendText, onSendMedia }: Cha
   const [content, setContent] = useState('')
   const [panel, setPanel] = useState<Panel>(null)
   const [gifQuery, setGifQuery] = useState('')
-  const [gifResults, setGifResults] = useState<GifItem[]>(FEATURED_GIFS)
+  const [gifResults, setGifResults] = useState<GifItem[]>([])
   const [gifLoading, setGifLoading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const hasTenorKey = Boolean(import.meta.env.VITE_TENOR_API_KEY?.trim())
 
+  const displayedGifs = useMemo(() => {
+    if (panel !== 'gif') return []
+    if (!hasTenorKey || !gifQuery.trim()) return FEATURED_GIFS
+    return gifResults.length > 0 ? gifResults : FEATURED_GIFS
+  }, [panel, hasTenorKey, gifQuery, gifResults])
+
   useEffect(() => {
-    if (panel !== 'gif') return
-    if (!hasTenorKey) {
-      setGifResults(FEATURED_GIFS)
-      return
-    }
+    if (panel !== 'gif' || !hasTenorKey) return
 
     const q = gifQuery.trim()
-    if (!q) {
-      setGifResults(FEATURED_GIFS)
-      return
-    }
+    if (!q) return
 
     const t = window.setTimeout(() => {
       setGifLoading(true)
       void searchTenorGifs(q)
-        .then((rows) => setGifResults(rows.length ? rows : FEATURED_GIFS))
+        .then((rows) => setGifResults(rows))
         .finally(() => setGifLoading(false))
     }, 350)
 
@@ -178,7 +177,7 @@ export function ChatComposer({ disabled, sending, onSendText, onSendMedia }: Cha
                 </div>
               ) : (
                 <div className="grid max-h-48 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
-                  {gifResults.map((gif) => (
+                  {displayedGifs.map((gif) => (
                     <button
                       key={gif.id}
                       type="button"
