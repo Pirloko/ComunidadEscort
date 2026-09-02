@@ -16,6 +16,11 @@
   [headers.values]
     Content-Type = "application/xml; charset=utf-8"
 
+[[headers]]
+  for = "/llms.txt"
+  [headers.values]
+    Content-Type = "text/plain; charset=utf-8"
+
 # Canónica: / → /home (evita duplicar la home nacional en GSC)
 [[redirects]]
   from = "/"

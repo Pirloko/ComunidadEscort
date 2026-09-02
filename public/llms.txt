@@ -1,0 +1,47 @@
+# Comunidadescort.cl
+
+> Directorio nacional de habitaciones y piezas para escort en Chile. Listados por ciudad con contacto directo, guías de publicaciones y comunidad privada para seguridad y apoyo mutuo.
+
+## Páginas principales
+
+- [Inicio — habitaciones para escort en Chile](https://comunidadescort.cl/home)
+- [Registro a la comunidad](https://comunidadescort.cl/register)
+- [Iniciar sesión](https://comunidadescort.cl/login)
+
+## Habitaciones por ciudad
+
+- [Santiago](https://comunidadescort.cl/habitaciones-escort/santiago)
+- [Valparaíso](https://comunidadescort.cl/habitaciones-escort/valparaiso)
+- [Viña del Mar](https://comunidadescort.cl/habitaciones-escort/vina-del-mar)
+- [Rancagua](https://comunidadescort.cl/habitaciones-escort/rancagua)
+- [Talca](https://comunidadescort.cl/habitaciones-escort/talca)
+- [Curicó](https://comunidadescort.cl/habitaciones-escort/curico)
+- [Chillán](https://comunidadescort.cl/habitaciones-escort/chillan)
+- [Concepción](https://comunidadescort.cl/habitaciones-escort/concepcion)
+- [Temuco](https://comunidadescort.cl/habitaciones-escort/temuco)
+- [Antofagasta](https://comunidadescort.cl/habitaciones-escort/antofagasta)
+- [La Serena](https://comunidadescort.cl/habitaciones-escort/la-serena)
+- [Puerto Montt](https://comunidadescort.cl/habitaciones-escort/puerto-montt)
+- [Arica](https://comunidadescort.cl/habitaciones-escort/arica)
+- [Iquique](https://comunidadescort.cl/habitaciones-escort/iquique)
+
+## Guías de publicaciones
+
+- [Guía Chimbis](https://comunidadescort.cl/guia-publicaciones-chimbis)
+- [Guía Skokka](https://comunidadescort.cl/guia-publicaciones-skokka)
+- [Guía Locanto](https://comunidadescort.cl/guia-publicaciones-locanto)
+- [Guía SimpleEscorts](https://comunidadescort.cl/guia-publicaciones-simpleescorts)
+- [Guía Escorcitas](https://comunidadescort.cl/guia-publicaciones-escorcitas)
+
+## Recursos para crawlers
+
+- [Sitemap XML](https://comunidadescort.cl/sitemap.xml)
+- [Robots.txt](https://comunidadescort.cl/robots.txt)
+
+## Contacto
+
+- Formulario público «Contáctanos» en el pie de [la página de inicio](https://comunidadescort.cl/home).
+
+## Ámbito privado (requiere cuenta aprobada)
+
+Las secciones de foro, alertas, chat, perfil y moderación son privadas y no están pensadas para indexación ni entrenamiento.

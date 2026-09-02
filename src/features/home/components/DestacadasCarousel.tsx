@@ -160,22 +160,27 @@ export function DestacadasCarousel() {
           </div>
 
           {featured.length > 1 && (
-            <div className="flex justify-center gap-1.5" aria-hidden>
+            <div
+              className="carousel-dots carousel-dots--accent"
+              role="tablist"
+              aria-label="Seleccionar destacada"
+            >
               {featured.map((h, i) => (
                 <button
                   key={h.id}
                   type="button"
-                  className={cn(
-                    'h-1.5 rounded-full transition-all duration-300',
-                    i === active ? 'w-6 bg-accent' : 'w-1.5 bg-white/25',
-                  )}
+                  role="tab"
+                  className="carousel-dot"
                   onClick={() => {
                     const el = trackRef.current
                     const slide = el?.querySelectorAll<HTMLElement>('[data-destacada-slide]')[i]
                     slide?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
                   }}
-                  aria-label={`Ir a destacada ${i + 1}`}
-                />
+                  aria-label={`Ir a destacada ${i + 1}: ${h.name}`}
+                  aria-selected={i === active}
+                >
+                  <span className="carousel-dot-indicator" aria-hidden="true" />
+                </button>
               ))}
             </div>
           )}

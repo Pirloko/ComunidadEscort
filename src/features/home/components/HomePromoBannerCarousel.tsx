@@ -13,11 +13,9 @@ const AUTO_MS = 5500
 
 function BannerSlide({
   banner,
-  isActive,
   priority,
 }: {
   banner: HomeBanner
-  isActive: boolean
   priority: boolean
 }) {
   const image = (
@@ -32,31 +30,21 @@ function BannerSlide({
     />
   )
 
-  const content = banner.link_url ? (
-    <a
-      href={banner.link_url}
-      target="_blank"
-      rel="noopener noreferrer sponsored"
-      className="block h-full w-full"
-      aria-label={`Publicidad: ${banner.title}`}
-    >
-      {image}
-    </a>
-  ) : (
-    image
-  )
+  if (banner.link_url) {
+    return (
+      <a
+        href={banner.link_url}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        className="block h-full w-full"
+        aria-label={`Publicidad: ${banner.title}`}
+      >
+        {image}
+      </a>
+    )
+  }
 
-  return (
-    <div
-      className={cn(
-        'absolute inset-0 transition-opacity duration-500 ease-out',
-        isActive ? 'z-[2] opacity-100' : 'z-[1] pointer-events-none opacity-0',
-      )}
-      aria-hidden={!isActive}
-    >
-      {content}
-    </div>
-  )
+  return image
 }
 
 export function HomePromoBannerCarousel() {
@@ -70,6 +58,7 @@ export function HomePromoBannerCarousel() {
   })
 
   const count = banners.length
+  const current = banners[active]
 
   const goTo = useCallback(
     (index: number) => {
@@ -98,6 +87,7 @@ export function HomePromoBannerCarousel() {
     <section
       className="home-promo-banner home-fade-up"
       aria-label="Publicidad"
+      aria-roledescription="carrusel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)}
@@ -113,15 +103,16 @@ export function HomePromoBannerCarousel() {
                 'relative w-full bg-[#0a0a0c]',
                 BANNER_ASPECT_CLASS,
               )}
+              aria-live="polite"
             >
-              {banners.map((banner, i) => (
-                <BannerSlide
-                  key={banner.id}
-                  banner={banner}
-                  isActive={i === active}
-                  priority={i === 0}
-                />
-              ))}
+              {current && (
+                <div
+                  key={current.id}
+                  className="home-promo-slide-enter absolute inset-0"
+                >
+                  <BannerSlide banner={current} priority={active === 0} />
+                </div>
+              )}
             </div>
 
             {count > 1 && (
@@ -143,19 +134,23 @@ export function HomePromoBannerCarousel() {
                   <ChevronRight className="h-4 w-4" />
                 </button>
 
-                <div className="absolute inset-x-0 bottom-2 z-[3] flex justify-center gap-1.5">
+                <div
+                  className="carousel-dots carousel-dots--light absolute inset-x-0 bottom-0 z-[3]"
+                  role="tablist"
+                  aria-label="Seleccionar banner"
+                >
                   {banners.map((banner, i) => (
                     <button
                       key={banner.id}
                       type="button"
-                      className={cn(
-                        'h-1.5 rounded-full transition-all duration-300',
-                        i === active ? 'w-6 bg-white' : 'w-1.5 bg-white/40',
-                      )}
+                      role="tab"
+                      className="carousel-dot"
                       onClick={() => goTo(i)}
-                      aria-label={`Ir al banner ${i + 1}`}
-                      aria-current={i === active ? 'true' : undefined}
-                    />
+                      aria-label={`Ir al banner ${i + 1}: ${banner.title}`}
+                      aria-selected={i === active}
+                    >
+                      <span className="carousel-dot-indicator" aria-hidden="true" />
+                    </button>
                   ))}
                 </div>
               </>

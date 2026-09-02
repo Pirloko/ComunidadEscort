@@ -31,3 +31,7 @@ Disallow: /guia-publicaciones-wenas
 Disallow: /guia-publicaciones-gemidos
 
 Sitemap: https://comunidadescort.cl/sitemap.xml
+
+# Guía para LLMs y agentes
+# https://llmstxt.org/
+Llms-Txt: https://comunidadescort.cl/llms.txt

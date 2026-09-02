@@ -102,7 +102,7 @@ export function AnunciosGuidesSection() {
                 <Button
                   asChild
                   size="sm"
-                  className="h-9 shrink-0 gap-1.5 rounded-lg bg-[#25D366] px-3 text-xs font-semibold text-white hover:bg-[#1ebe57]"
+                  className="habitacion-cta-primary h-11 shrink-0 gap-1.5 rounded-lg px-3 text-xs font-semibold text-white"
                 >
                   <a
                     href={whatsappUrl(
