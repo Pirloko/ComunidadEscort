@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
@@ -13,9 +13,13 @@ import { cn } from '@/lib/utils'
 import { resourceService } from '@/services/resource.service'
 import type { Resource } from '@/types/resources'
 
-function DestacadaSlide({ habitacion }: { habitacion: Resource }) {
+function DestacadaSlide({ habitacion, priority }: { habitacion: Resource; priority?: boolean }) {
   const detailTo = `/home/habitaciones/${habitacion.id}`
-  const videoCover = isHabitacionVideoCover(habitacion.photos, habitacion.video_url)
+  const videoCover = isHabitacionVideoCover(
+    habitacion.photos,
+    habitacion.video_url,
+    habitacion.has_video_cover,
+  )
 
   return (
     <article className="destacadas-slide group relative shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-card/90 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.85)]">
@@ -24,7 +28,9 @@ function DestacadaSlide({ habitacion }: { habitacion: Resource }) {
           <HabitacionCardCover
             photos={habitacion.photos}
             videoUrl={habitacion.video_url}
+            hasVideoCover={habitacion.has_video_cover}
             alt={habitacion.name}
+            priority={priority}
             mediaClassName="transition-transform duration-700 ease-out group-hover:scale-[1.05]"
           />
           <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
@@ -59,40 +65,55 @@ export function DestacadasCarousel() {
     staleTime: 1000 * 60 * 5,
   })
 
-  const updateScrollState = () => {
+  const rafRef = useRef<number | null>(null)
+
+  const updateScrollState = useCallback(() => {
     const el = trackRef.current
     if (!el) return
     const maxScroll = el.scrollWidth - el.clientWidth
-    setCanPrev(el.scrollLeft > 8)
-    setCanNext(el.scrollLeft < maxScroll - 8)
+    const nextCanPrev = el.scrollLeft > 8
+    const nextCanNext = el.scrollLeft < maxScroll - 8
 
     const slides = Array.from(el.querySelectorAll<HTMLElement>('[data-destacada-slide]'))
-    if (slides.length === 0) return
-    const center = el.scrollLeft + el.clientWidth / 2
-    let best = 0
-    let bestDist = Infinity
-    slides.forEach((slide, i) => {
-      const mid = slide.offsetLeft + slide.offsetWidth / 2
-      const dist = Math.abs(mid - center)
-      if (dist < bestDist) {
-        bestDist = dist
-        best = i
-      }
+    let nextActive = 0
+    if (slides.length > 0) {
+      const center = el.scrollLeft + el.clientWidth / 2
+      let bestDist = Infinity
+      slides.forEach((slide, i) => {
+        const mid = slide.offsetLeft + slide.offsetWidth / 2
+        const dist = Math.abs(mid - center)
+        if (dist < bestDist) {
+          bestDist = dist
+          nextActive = i
+        }
+      })
+    }
+
+    setCanPrev((prev) => (prev === nextCanPrev ? prev : nextCanPrev))
+    setCanNext((prev) => (prev === nextCanNext ? prev : nextCanNext))
+    setActive((prev) => (prev === nextActive ? prev : nextActive))
+  }, [])
+
+  const scheduleScrollState = useCallback(() => {
+    if (rafRef.current !== null) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null
+      updateScrollState()
     })
-    setActive(best)
-  }
+  }, [updateScrollState])
 
   useEffect(() => {
     const el = trackRef.current
     if (!el) return
     updateScrollState()
-    el.addEventListener('scroll', updateScrollState, { passive: true })
-    window.addEventListener('resize', updateScrollState)
+    el.addEventListener('scroll', scheduleScrollState, { passive: true })
+    window.addEventListener('resize', scheduleScrollState)
     return () => {
-      el.removeEventListener('scroll', updateScrollState)
-      window.removeEventListener('resize', updateScrollState)
+      el.removeEventListener('scroll', scheduleScrollState)
+      window.removeEventListener('resize', scheduleScrollState)
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
-  }, [featured.length])
+  }, [featured.length, scheduleScrollState, updateScrollState])
 
   const scrollBySlide = (dir: -1 | 1) => {
     const el = trackRef.current
@@ -154,7 +175,7 @@ export function DestacadasCarousel() {
                   i === active && 'destacadas-slide-wrap-active',
                 )}
               >
-                <DestacadaSlide habitacion={h} />
+                <DestacadaSlide habitacion={h} priority={i === 0} />
               </div>
             ))}
           </div>

@@ -4,59 +4,82 @@ import {
   HABITACION_DEFAULT_COVER,
 } from '@/features/home/components/HabitacionPhotoSeal'
 import { cn } from '@/lib/utils'
+import type { ResourcePhoto } from '@/types/resources'
 
 export function isHabitacionVideoCover(
-  photos?: { url: string }[] | null,
+  photos?: Pick<ResourcePhoto, 'url'>[] | null,
   videoUrl?: string | null,
+  hasVideoCover?: boolean,
 ): boolean {
-  return !photos?.[0]?.url && !!videoUrl
+  return hasVideoCover || (!photos?.[0]?.url && !!videoUrl)
 }
 
 interface HabitacionCardCoverProps {
-  photos?: { url: string }[] | null
+  photos?: ResourcePhoto[] | null
   videoUrl?: string | null
+  /** Portada solo-video en listado (sin descargar el MP4) */
+  hasVideoCover?: boolean
   alt: string
   className?: string
   /** Clases del media (img/video), p.ej. hover scale. */
   mediaClassName?: string
   showSeal?: boolean
+  /** Primera slide / above-the-fold */
+  priority?: boolean
+  /** URL de respaldo si la variante card (-card.webp) aún no existe */
+  photoFallbackUrl?: string
 }
 
 /**
- * Portada de card/listado: foto → video (solo-video) → placeholder.
+ * Portada de card/listado: foto → placeholder video → placeholder.
  * El play se renderiza aparte (HabitacionVideoPlayBadge) encima del gradiente.
  */
 export function HabitacionCardCover({
   photos,
   videoUrl,
+  hasVideoCover = false,
   alt,
   className,
   mediaClassName,
   showSeal = true,
+  priority = false,
+  photoFallbackUrl,
 }: HabitacionCardCoverProps) {
   const photo = photos?.[0]?.url
+  const fallback = photoFallbackUrl ?? photos?.[0]?.fallback_url
   const hasPhoto = !!photo
-  const hasVideoOnly = !hasPhoto && !!videoUrl
+  const showVideoPlaceholder = !hasPhoto && (hasVideoCover || !!videoUrl)
+  const imgSrc = photo || HABITACION_DEFAULT_COVER
 
   return (
     <div className={cn('relative h-full w-full bg-muted', className)}>
-      {hasVideoOnly ? (
-        <video
-          src={`${videoUrl!}#t=0.001`}
-          muted
-          playsInline
-          preload="metadata"
-          className={cn('h-full w-full object-cover', mediaClassName)}
+      {showVideoPlaceholder ? (
+        <div
+          className={cn(
+            'flex h-full w-full items-center justify-center bg-gradient-to-br from-muted via-card to-muted',
+            mediaClassName,
+          )}
+          role="img"
           aria-label={alt}
         />
       ) : (
         <>
           <img
-            src={photo || HABITACION_DEFAULT_COVER}
+            src={imgSrc}
             alt={alt}
             className={cn('h-full w-full object-cover', mediaClassName)}
-            loading="lazy"
+            width={462}
+            height={616}
+            sizes="(max-width: 640px) 92vw, 462px"
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
+            decoding={priority ? 'sync' : 'async'}
             draggable={false}
+            onError={(e) => {
+              if (fallback && e.currentTarget.src !== fallback) {
+                e.currentTarget.src = fallback
+              }
+            }}
           />
           {hasPhoto && showSeal && <HabitacionPhotoSeal />}
         </>

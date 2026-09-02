@@ -20,19 +20,15 @@ function shufflePublishers(list: RecommendedPublisher[]): RecommendedPublisher[]
 
 /** Sección SEO en /home: guía de publicaciones en portales conocidos. */
 export function AnunciosGuidesSection() {
-  const { data: publishers = [], dataUpdatedAt } = useQuery({
+  const { data: publishers = [] } = useQuery({
     queryKey: ['recommended-publishers'],
     queryFn: () => publisherService.listActive(),
-    staleTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 1000 * 60 * 5,
   })
 
-  // Orden aleatorio en cada carga / refetch (el admin sigue usando sort_order).
   const shuffledPublishers = useMemo(
     () => shufflePublishers(publishers),
-    // dataUpdatedAt cambia en cada fetch → nueva mezcla al refrescar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [publishers, dataUpdatedAt],
+    [publishers],
   )
 
   return (

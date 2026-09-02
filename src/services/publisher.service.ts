@@ -112,20 +112,24 @@ export const publisherService = {
     }
 
     const webp = await convertImageToWebp(file, {
-      maxEdge: 512,
-      quality: 0.85,
-      maxOutputBytes: MAX_LOGO_SIZE,
+      maxEdge: 160,
+      quality: 0.82,
+      maxOutputBytes: 48 * 1024,
     })
     const path = `${publisherId}/logo.webp`
 
     const { error: uploadError } = await supabase.storage
       .from(LOGO_BUCKET)
-      .upload(path, webp, { upsert: true, contentType: 'image/webp' })
+      .upload(path, webp, {
+        upsert: true,
+        contentType: 'image/webp',
+        cacheControl: '31536000',
+      })
 
     if (uploadError) throw uploadError
 
     const { data: pub } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(path)
-    const logoUrl = `${pub.publicUrl}?t=${Date.now()}`
+    const logoUrl = pub.publicUrl
 
     return publisherService.update(publisherId, { logo_url: logoUrl })
   },

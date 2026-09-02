@@ -43,8 +43,14 @@
       #root {
         min-height: 100dvh;
       }
+      .home-landing-bg {
+        background: #0a0a0c;
+      }
     </style>
-    <!-- Logo LCP: discovery temprana -->
+    <!-- Origen de imágenes Supabase (LCP / habitaciones) -->
+    <link rel="preconnect" href="https://dxlqnlznhmeslzbxibhn.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://dxlqnlznhmeslzbxibhn.supabase.co" />
+    <!-- Logo LCP fallback (home con banner usa preload inyectado en prerender) -->
     <link rel="preload" as="image" href="/logo-comunidad.webp" type="image/webp" fetchpriority="high" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

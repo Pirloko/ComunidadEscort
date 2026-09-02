@@ -1,6 +1,11 @@
 import { supabase } from '@/lib/supabase/client'
 import { convertImageToWebp } from '@/lib/image-webp'
 import {
+  isPublicStoragePath,
+  photoDisplayUrl,
+  type PhotoDisplaySize,
+} from '@/lib/supabase-image'
+import {
   parseHabitacionesCsv,
   type HabitacionCsvCity,
   type HabitacionCsvParseError,
@@ -111,8 +116,13 @@ function storagePathFromUrl(url: string, bucket = PHOTOS_BUCKET): string | null 
   return null
 }
 
-async function resolvePhotoUrls(photos: ResourcePhoto[] | undefined): Promise<ResourcePhoto[] | undefined> {
+async function resolvePhotoUrls(
+  photos: ResourcePhoto[] | undefined,
+  options?: { size?: PhotoDisplaySize },
+): Promise<ResourcePhoto[] | undefined> {
   if (!photos?.length) return photos
+
+  const size = options?.size ?? 'full'
 
   const withPaths = photos.map((photo) => ({
     photo,
@@ -124,23 +134,32 @@ async function resolvePhotoUrls(photos: ResourcePhoto[] | undefined): Promise<Re
   ]
   if (paths.length === 0) return []
 
-  const { data, error } = await supabase.storage
-    .from(PHOTOS_BUCKET)
-    .createSignedUrls(paths, SIGNED_URL_TTL_SEC)
-
-  if (error || !data) return []
-
+  const publicPaths = paths.filter((p) => isPublicStoragePath(p))
+  const privatePaths = paths.filter((p) => !isPublicStoragePath(p))
   const urlByPath = new Map<string, string>()
-  for (const row of data) {
-    if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
+
+  for (const p of publicPaths) {
+    urlByPath.set(p, photoDisplayUrl(p, size))
+  }
+
+  if (privatePaths.length > 0) {
+    const { data, error } = await supabase.storage
+      .from(PHOTOS_BUCKET)
+      .createSignedUrls(privatePaths, SIGNED_URL_TTL_SEC)
+
+    if (!error && data) {
+      for (const row of data) {
+        if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
+      }
+    }
   }
 
   return withPaths
     .map(({ photo, path }) => {
       if (!path) return null
-      const signedUrl = urlByPath.get(path)
-      if (!signedUrl) return null
-      return { ...photo, url: signedUrl }
+      const url = urlByPath.get(path)
+      if (!url) return null
+      return { ...photo, url }
     })
     .filter((p): p is ResourcePhoto => p !== null)
 }
@@ -182,7 +201,7 @@ async function withSignedPhotos(resource: Resource): Promise<Resource> {
   return sorted
 }
 
-/** Listado: firma covers (fotos) y, si no hay foto, el video en batch. */
+/** Listado: covers con URL pública cacheable; sin firmar videos (evita payload MP4 en home). */
 async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
   const prepared = resources.map((resource) => {
     const sorted = sortPhotos({
@@ -191,55 +210,45 @@ async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
     })
     const cover = sorted.photos?.[0] ?? null
     const path = cover ? storagePathFromUrl(cover.url) : null
-    const videoPath = sorted.video_url
-      ? storagePathFromUrl(sorted.video_url, VIDEOS_BUCKET)
-      : null
-    return { resource: sorted, cover, path, videoPath }
+    const hadVideoOnly = !cover?.url && !!sorted.video_url
+    return { resource: sorted, cover, path, hadVideoOnly }
   })
 
   const paths = [...new Set(prepared.map((p) => p.path).filter((p): p is string => !!p))]
+  const publicPaths = paths.filter((p) => isPublicStoragePath(p))
+  const privatePaths = paths.filter((p) => !isPublicStoragePath(p))
   const urlByPath = new Map<string, string>()
 
-  if (paths.length > 0) {
+  for (const p of publicPaths) {
+    urlByPath.set(p, photoDisplayUrl(p, 'card'))
+  }
+
+  if (privatePaths.length > 0) {
     const { data } = await supabase.storage
       .from(PHOTOS_BUCKET)
-      .createSignedUrls(paths, SIGNED_URL_TTL_SEC)
+      .createSignedUrls(privatePaths, SIGNED_URL_TTL_SEC)
     for (const row of data ?? []) {
       if (row.path && row.signedUrl) urlByPath.set(row.path, row.signedUrl)
     }
   }
 
-  const withPhotos = prepared.map(({ resource, cover, path, videoPath }) => {
+  return prepared.map(({ resource, cover, path, hadVideoOnly }) => {
     const hasCover = !!(cover && path && urlByPath.has(path))
     if (hasCover) {
-      resource.photos = [{ ...cover!, url: urlByPath.get(path!)! }]
-      resource.video_url = null
-      return { resource, videoPath: null as string | null }
-    }
-    resource.photos = []
-    return { resource, videoPath: videoPath && resource.video_url ? videoPath : null }
-  })
-
-  const videoPaths = [
-    ...new Set(withPhotos.map((p) => p.videoPath).filter((p): p is string => !!p)),
-  ]
-  const videoUrlByPath = new Map<string, string>()
-
-  if (videoPaths.length > 0) {
-    const { data } = await supabase.storage
-      .from(VIDEOS_BUCKET)
-      .createSignedUrls(videoPaths, SIGNED_VIDEO_TTL_SEC)
-    for (const row of data ?? []) {
-      if (row.path && row.signedUrl) videoUrlByPath.set(row.path, row.signedUrl)
-    }
-  }
-
-  return withPhotos.map(({ resource, videoPath }) => {
-    if (videoPath && videoUrlByPath.has(videoPath)) {
-      resource.video_url = videoUrlByPath.get(videoPath)!
+      resource.photos = [
+        {
+          ...cover!,
+          url: urlByPath.get(path!)!,
+          fallback_url: isPublicStoragePath(path!)
+            ? photoDisplayUrl(path!, 'full')
+            : undefined,
+        },
+      ]
     } else {
-      resource.video_url = null
+      resource.photos = []
     }
+    resource.video_url = null
+    if (hadVideoOnly) resource.has_video_cover = true
     return resource
   })
 }
@@ -832,20 +841,36 @@ export const resourceService = {
       throw new Error(`Máximo ${MAX_HABITACION_PHOTOS} fotos por habitación.`)
     }
 
-    const webp = await convertImageToWebp(file, { watermark: false })
+    const photoId = crypto.randomUUID()
+    const detailWebp = await convertImageToWebp(file, { maxEdge: 1200, watermark: false })
+    const cardWebp = await convertImageToWebp(file, { maxEdge: 640, watermark: false })
     const visibility = options?.isPublic ? 'public' : 'private'
-    const path = `${visibility}/${resourceId}/${crypto.randomUUID()}.webp`
+    const detailPath = `${visibility}/${resourceId}/${photoId}.webp`
+    const cardPath = `${visibility}/${resourceId}/${photoId}-card.webp`
 
-    const { error: uploadError } = await supabase.storage
+    const uploadOpts = {
+      upsert: false,
+      contentType: 'image/webp' as const,
+      cacheControl: '31536000',
+    }
+
+    const { error: detailError } = await supabase.storage
       .from(PHOTOS_BUCKET)
-      .upload(path, webp, { upsert: false, contentType: 'image/webp' })
+      .upload(detailPath, detailWebp, uploadOpts)
 
-    if (uploadError) throw uploadError
+    if (detailError) throw detailError
 
-    // Guardamos el path relativo; al leer se firma con createSignedUrl
+    await supabase.storage
+      .from(PHOTOS_BUCKET)
+      .upload(cardPath, cardWebp, uploadOpts)
+      .then(({ error: cardError }) => {
+        if (cardError) console.warn('[uploadResourcePhoto] card variant:', cardError.message)
+      })
+
+    // Guardamos el path relativo; al leer se resuelve con URL pública o firmada
     const { data, error } = await supabase
       .from('resource_photos')
-      .insert({ resource_id: resourceId, url: path, sort_order: sortOrder })
+      .insert({ resource_id: resourceId, url: detailPath, sort_order: sortOrder })
       .select('id, resource_id, url, sort_order, created_at')
       .single()
 

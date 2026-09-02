@@ -16,6 +16,8 @@ export interface ResourcePhoto {
   id: string
   resource_id: string
   url: string
+  /** Si la variante card no existe (fotos legacy), usar esta URL en onError */
+  fallback_url?: string
   sort_order: number
   created_at: string
 }
@@ -39,6 +41,8 @@ export interface HabitacionAttrs {
   tiene_extintor: boolean
   /** Path o URL firmada del video (máx. 1) */
   video_url: string | null
+  /** Solo en listados: portada es video sin cargar el archivo */
+  has_video_cover?: boolean
 }
 
 export interface Resource extends HabitacionAttrs {

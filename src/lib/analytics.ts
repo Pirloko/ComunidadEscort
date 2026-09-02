@@ -49,9 +49,9 @@ export function initAnalytics(): void {
 
   // Diferir red de GA: prioriza paint / LCP
   if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(inject, { timeout: 3500 })
+    window.requestIdleCallback(inject, { timeout: 5000 })
   } else {
-    window.setTimeout(inject, 2000)
+    window.setTimeout(inject, 3000)
   }
 }
 

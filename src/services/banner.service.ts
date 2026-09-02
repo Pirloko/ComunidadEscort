@@ -99,19 +99,23 @@ export const bannerService = {
 
     const webp = await convertImageToWebp(file, {
       maxEdge: 1200,
-      quality: 0.88,
-      maxOutputBytes: MAX_IMAGE_SIZE,
+      quality: 0.82,
+      maxOutputBytes: 60 * 1024,
     })
     const path = `${bannerId}/banner.webp`
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
-      .upload(path, webp, { upsert: true, contentType: 'image/webp' })
+      .upload(path, webp, {
+        upsert: true,
+        contentType: 'image/webp',
+        cacheControl: '31536000',
+      })
 
     if (uploadError) throw uploadError
 
     const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
-    const imageUrl = `${pub.publicUrl}?t=${Date.now()}`
+    const imageUrl = pub.publicUrl
 
     return bannerService.update(bannerId, { image_url: imageUrl })
   },

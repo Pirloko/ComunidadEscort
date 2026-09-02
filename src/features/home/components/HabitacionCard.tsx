@@ -23,7 +23,11 @@ export function HabitacionCard({ habitacion, detailTo, showFavorite = false }: H
     habitacion.recibe_hombre,
     habitacion.recibe_trans,
   )
-  const videoCover = isHabitacionVideoCover(habitacion.photos, habitacion.video_url)
+  const videoCover = isHabitacionVideoCover(
+    habitacion.photos,
+    habitacion.video_url,
+    habitacion.has_video_cover,
+  )
 
   return (
     <article className="home-card-lift group overflow-hidden rounded-2xl border border-white/10 bg-card/90 shadow-[0_16px_40px_-28px_rgba(0,0,0,0.9)]">
@@ -33,6 +37,7 @@ export function HabitacionCard({ habitacion, detailTo, showFavorite = false }: H
             <HabitacionCardCover
               photos={habitacion.photos}
               videoUrl={habitacion.video_url}
+              hasVideoCover={habitacion.has_video_cover}
               alt={habitacion.name}
               mediaClassName="transition-transform duration-500 group-hover:scale-[1.03]"
             />
