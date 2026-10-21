@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Ban, ExternalLink, XCircle } from 'lucide-react'
+import { Ban, ExternalLink, KeyRound, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AccountStatusBadge } from '@/features/admin/components/AccountStatusBadge'
+import { ResetPasswordHelpModal } from '@/features/admin/components/ResetPasswordHelpModal'
 import { UserApproveButton, UserReviewModal } from '@/features/admin/components/UserReviewModal'
 import { profileService } from '@/services/profile.service'
 import { useAuth } from '@/features/auth/hooks/useAuth'
@@ -26,6 +27,7 @@ export function UserRow({ user }: UserRowProps) {
   const { user: currentUser } = useAuth()
   const queryClient = useQueryClient()
   const [reviewMode, setReviewMode] = useState<'reject' | 'block' | null>(null)
+  const [showResetPassword, setShowResetPassword] = useState(false)
   const isSelf = currentUser?.id === user.id
 
   const updateMutation = useMutation({
@@ -123,6 +125,18 @@ export function UserRow({ user }: UserRowProps) {
               )}
             </div>
           )}
+
+          {!isSelf && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={() => setShowResetPassword(true)}
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              Restablecer clave
+            </Button>
+          )}
         </div>
       </div>
 
@@ -131,6 +145,9 @@ export function UserRow({ user }: UserRowProps) {
         mode={reviewMode}
         onClose={() => setReviewMode(null)}
       />
+      {showResetPassword && (
+        <ResetPasswordHelpModal user={user} onClose={() => setShowResetPassword(false)} />
+      )}
     </>
   )
 }

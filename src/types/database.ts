@@ -177,6 +177,18 @@ export interface Database {
         }
         Returns: boolean
       }
+      is_phone_available: {
+        Args: {
+          p_phone: string
+        }
+        Returns: boolean
+      }
+      is_email_available: {
+        Args: {
+          p_email: string
+        }
+        Returns: boolean
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

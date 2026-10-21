@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabase/client'
 import { convertImageToWebp } from '@/lib/image-webp'
 import type { PrivacySettings, Profile, PublicProfile, UserRole } from '@/types/database'
 import type {
+  AdminPasswordResetMode,
+  AdminPasswordResetResult,
   AdminProfile,
   CreateUserAsAdminInput,
   CreateUserAsAdminResult,
@@ -180,6 +182,18 @@ export const profileService = {
     return data as boolean
   },
 
+  async isEmailAvailable(email: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('is_email_available', { p_email: email })
+    if (error) throw error
+    return data as boolean
+  },
+
+  async isPhoneAvailable(phone: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('is_phone_available', { p_phone: phone })
+    if (error) throw error
+    return data as boolean
+  },
+
   async createUserAsAdmin(input: CreateUserAsAdminInput): Promise<CreateUserAsAdminResult> {
     const { data, error } = await supabase.functions.invoke('admin-create-user', {
       body: input,
@@ -188,6 +202,21 @@ export const profileService = {
       throw new Error(await getEdgeFunctionErrorMessage(error, 'No se pudo crear el usuario'))
     }
     return data as CreateUserAsAdminResult
+  },
+
+  async resetPasswordAsAdmin(
+    userId: string,
+    mode: AdminPasswordResetMode,
+  ): Promise<AdminPasswordResetResult> {
+    const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+      body: { user_id: userId, mode },
+    })
+    if (error) {
+      throw new Error(
+        await getEdgeFunctionErrorMessage(error, 'No se pudo restablecer la contraseña'),
+      )
+    }
+    return data as AdminPasswordResetResult
   },
 
   async reviewAccount(

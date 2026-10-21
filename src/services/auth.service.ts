@@ -59,6 +59,11 @@ export const authService = {
     if (error) throw error
   },
 
+  async verifyRecoveryToken(tokenHash: string) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+    if (error) throw error
+  },
+
   async updatePassword(password: string) {
     const { error } = await supabase.auth.updateUser({ password })
     if (error) throw error

@@ -43,6 +43,12 @@ export interface CreateUserAsAdminResult {
   temporaryPassword: string
 }
 
+export type AdminPasswordResetMode = 'link' | 'temporary'
+
+export type AdminPasswordResetResult =
+  | { email: string; tokenHash: string }
+  | { email: string; temporaryPassword: string }
+
 export interface ReviewAccountInput {
   account_status: 'aprobada' | 'rechazada' | 'bloqueada'
   rejection_reason?: string

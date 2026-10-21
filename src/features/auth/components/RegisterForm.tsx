@@ -31,22 +31,38 @@ export function RegisterForm() {
         return
       }
 
+      const emailAvailable = await profileService.isEmailAvailable(data.email)
+      if (!emailAvailable) {
+        setError('Este correo ya está registrado. Inicia sesión o recupera tu contraseña.')
+        return
+      }
+
+      const phone = normalizePhoneChile(data.phone)
+      const phoneAvailable = await profileService.isPhoneAvailable(phone)
+      if (!phoneAvailable) {
+        setError('Este número de celular ya está registrado. Inicia sesión o usa otro número.')
+        return
+      }
+
       const available = await cityService.isAliasAvailable(data.alias)
       if (!available) {
         setError('Este alias ya está en uso. Elige otro.')
         return
       }
 
-      await authService.signUp(
-        data.email,
-        data.password,
-        data.alias,
-        normalizePhoneChile(data.phone),
-        data.publication_link,
-      )
+      await authService.signUp(data.email, data.password, data.alias, phone, data.publication_link)
       setSuccess(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrarse')
+      const message = err instanceof Error ? err.message : ''
+      if (message.includes('User already registered')) {
+        setError('Este correo ya está registrado. Inicia sesión o recupera tu contraseña.')
+      } else if (message.includes('Database error saving new user')) {
+        setError(
+          'No pudimos crear tu cuenta. Revisa que el correo, el celular o el alias no estén ya registrados.',
+        )
+      } else {
+        setError(message || 'Error al registrarse')
+      }
     }
   }
 
