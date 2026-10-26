@@ -35,6 +35,7 @@ export function CasasPage() {
   const [selectedCity, setSelectedCity] = useState<City | null>(null)
   const [cityMenuOpen, setCityMenuOpen] = useState(false)
   const [pageByFilter, setPageByFilter] = useState<Record<string, number>>({})
+  const [shuffleSeed] = useState(() => Math.floor(Math.random() * 2 ** 32))
   const listRef = useRef<HTMLElement>(null)
   const cityBoxRef = useRef<HTMLDivElement>(null)
 
@@ -58,7 +59,7 @@ export function CasasPage() {
   }, [])
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey: ['casas-habitaciones', recibe, soloParejas, selectedCity?.id, page],
+    queryKey: ['casas-habitaciones', recibe, soloParejas, selectedCity?.id, page, shuffleSeed],
     queryFn: () =>
       resourceService.getResourcesPage({
         category: 'habitaciones_escort',
@@ -67,6 +68,7 @@ export function CasasPage() {
         recibe_hombre: recibe === 'hombre' ? true : undefined,
         recibe_trans: recibe === 'trans' ? true : undefined,
         acepta_parejas: soloParejas ? true : undefined,
+        shuffleSeed,
         limit: CASAS_PAGE_SIZE,
         offset: (page - 1) * CASAS_PAGE_SIZE,
       }),

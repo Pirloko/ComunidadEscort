@@ -279,11 +279,23 @@ async function withSignedCovers(resources: Resource[]): Promise<Resource[]> {
   })
 }
 
+/** PRNG determinista: mismo seed → mismo orden entre páginas y refetch. */
+function seededRandom(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 /** Mezcla Fisher–Yates — orden aleatorio en cada carga de /home. */
-function shuffleArray<T>(items: T[]): T[] {
+function shuffleArray<T>(items: T[], random: () => number = Math.random): T[] {
   const arr = [...items]
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = Math.floor(random() * (i + 1))
     const tmp = arr[i]!
     arr[i] = arr[j]!
     arr[j] = tmp
@@ -363,6 +375,7 @@ export const resourceService = {
     recibe_hombre?: boolean
     recibe_trans?: boolean
     acepta_parejas?: boolean
+    shuffleSeed: number
     limit?: number
     offset?: number
   }): Promise<{ items: Resource[]; total: number }> {
@@ -375,13 +388,9 @@ export const resourceService = {
 
     let query = supabase
       .from('resources')
-      .select(RESOURCE_SELECT, { count: 'exact' })
+      .select('id, is_listing_priority')
       .eq('status', 'aprobada')
       .eq('is_active', true)
-      .order('is_listing_priority', { ascending: false })
-      .order('is_verified', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
 
     if (params.cityId) query = query.eq('city_id', params.cityId)
     else if (params.cityIds?.length) query = query.in('city_id', params.cityIds)
@@ -395,10 +404,34 @@ export const resourceService = {
       if (q) query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`)
     }
 
-    const { data, error, count } = await query
+    const { data: rows, error } = await query
     if (error) throw error
-    const items = await withSignedCovers((data ?? []) as unknown as Resource[])
-    return { items, total: count ?? 0 }
+
+    const sorted = [...(rows ?? [])].sort((a, b) => a.id.localeCompare(b.id))
+    const shuffled = shuffleArray(sorted, seededRandom(params.shuffleSeed))
+    // Con ciudad elegida, "Primera en listado" va arriba; sin ciudad todo se mezcla.
+    const ordered = params.cityId
+      ? [
+          ...shuffled.filter((r) => r.is_listing_priority),
+          ...shuffled.filter((r) => !r.is_listing_priority),
+        ]
+      : shuffled
+
+    const pageIds = ordered.slice(offset, offset + limit).map((r) => r.id)
+    if (pageIds.length === 0) return { items: [], total: ordered.length }
+
+    const { data, error: pageError } = await supabase
+      .from('resources')
+      .select(RESOURCE_SELECT)
+      .in('id', pageIds)
+    if (pageError) throw pageError
+
+    const byId = new Map(((data ?? []) as unknown as Resource[]).map((r) => [r.id, r]))
+    const pageItems = pageIds
+      .map((id) => byId.get(id))
+      .filter((r): r is Resource => r !== undefined)
+    const items = await withSignedCovers(pageItems)
+    return { items, total: ordered.length }
   },
 
   async getPublicHabitacionCities(): Promise<
