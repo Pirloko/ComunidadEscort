@@ -138,6 +138,8 @@ export function HabitacionesCityPage() {
       </header>
 
       <main className="relative mx-auto max-w-lg space-y-6 px-3 pb-[max(3rem,env(safe-area-inset-bottom))] pt-5">
+        <HomePromoBannerCarousel />
+
         <Link to="/home" className="habitacion-back-link home-fade-up inline-flex">
           <ArrowLeft className="h-4 w-4" />
           Habitaciones para escort en Chile
@@ -162,8 +164,6 @@ export function HabitacionesCityPage() {
             </Link>
           </p>
         </header>
-
-        <HomePromoBannerCarousel />
 
         <section
           ref={listRef}
