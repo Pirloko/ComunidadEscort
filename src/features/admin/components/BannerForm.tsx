@@ -129,7 +129,8 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
         </button>
         <p className="text-xs text-muted-foreground">
           Medida recomendada: <strong>1200 × 600 px</strong> (proporción 2:1, horizontal).
-          En móvil y escritorio se muestra completo, sin recortes.
+          En móvil y escritorio se muestra completo, sin recortes. La app la convierte a
+          WebP (máx. ~180 KB tras optimizar).
         </p>
         {(imagePreview || banner?.image_url) && !removeImage && (
           <Button

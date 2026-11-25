@@ -97,10 +97,12 @@ export const bannerService = {
       throw new Error('La imagen no puede superar 3 MB.')
     }
 
+    // 60 KB era demasiado estricto para collages 1200×600 con texto/detalle;
+    // al recomprimir en canvas casi siempre superaban el tope.
     const webp = await convertImageToWebp(file, {
       maxEdge: 1200,
       quality: 0.82,
-      maxOutputBytes: 60 * 1024,
+      maxOutputBytes: 180 * 1024,
     })
     const path = `${bannerId}/banner.webp`
 
