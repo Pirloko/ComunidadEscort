@@ -112,6 +112,8 @@ export interface HomeBanner {
   id: string
   title: string
   link_url: string | null
+  instagram_url: string | null
+  whatsapp_phone: string | null
   image_url: string | null
   is_active: boolean
   sort_order: number
@@ -122,6 +124,8 @@ export interface HomeBanner {
 export interface CreateHomeBannerInput {
   title: string
   link_url?: string | null
+  instagram_url?: string | null
+  whatsapp_phone?: string | null
   image_url?: string | null
   is_active?: boolean
   sort_order?: number
@@ -130,6 +134,8 @@ export interface CreateHomeBannerInput {
 export interface UpdateHomeBannerInput {
   title?: string
   link_url?: string | null
+  instagram_url?: string | null
+  whatsapp_phone?: string | null
   image_url?: string | null
   is_active?: boolean
   sort_order?: number

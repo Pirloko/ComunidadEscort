@@ -3,7 +3,7 @@ import { convertImageToWebp } from '@/lib/image-webp'
 import type { CreateHomeBannerInput, HomeBanner, UpdateHomeBannerInput } from '@/types/admin'
 
 const SELECT =
-  'id, title, link_url, image_url, is_active, sort_order, created_at, updated_at'
+  'id, title, link_url, instagram_url, whatsapp_phone, image_url, is_active, sort_order, created_at, updated_at'
 
 const BUCKET = 'home-banners'
 const MAX_IMAGE_SIZE = 3 * 1024 * 1024
@@ -38,6 +38,8 @@ export const bannerService = {
     const payload = {
       title: input.title.trim(),
       link_url: input.link_url?.trim() || null,
+      instagram_url: input.instagram_url?.trim() || null,
+      whatsapp_phone: input.whatsapp_phone?.trim() || null,
       image_url: input.image_url ?? null,
       is_active: input.is_active ?? true,
       sort_order: input.sort_order ?? 0,
@@ -59,6 +61,10 @@ export const bannerService = {
     }
     if (input.title !== undefined) payload.title = input.title.trim()
     if (input.link_url !== undefined) payload.link_url = input.link_url?.trim() || null
+    if (input.instagram_url !== undefined) payload.instagram_url = input.instagram_url?.trim() || null
+    if (input.whatsapp_phone !== undefined) {
+      payload.whatsapp_phone = input.whatsapp_phone?.trim() || null
+    }
     if (input.image_url !== undefined) payload.image_url = input.image_url
     if (input.is_active !== undefined) payload.is_active = input.is_active
     if (input.sort_order !== undefined) payload.sort_order = input.sort_order

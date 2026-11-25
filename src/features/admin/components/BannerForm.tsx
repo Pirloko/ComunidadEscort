@@ -12,6 +12,7 @@ import {
   type BannerFormData,
 } from '@/features/admin/schemas/banner.schema'
 import { bannerService } from '@/services/banner.service'
+import { normalizePhoneChile } from '@/lib/phone'
 import type { HomeBanner } from '@/types/admin'
 
 interface BannerFormProps {
@@ -39,6 +40,8 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
     defaultValues: {
       title: '',
       link_url: '',
+      instagram_url: '',
+      whatsapp_phone: '',
       is_active: true,
       sort_order: 0,
     },
@@ -51,6 +54,8 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
       reset({
         title: banner.title,
         link_url: banner.link_url ?? '',
+        instagram_url: banner.instagram_url ?? '',
+        whatsapp_phone: banner.whatsapp_phone ?? '',
         is_active: banner.is_active,
         sort_order: banner.sort_order,
       })
@@ -65,6 +70,10 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
       const payload = {
         title: data.title,
         link_url: data.link_url?.trim() || null,
+        instagram_url: data.instagram_url?.trim() || null,
+        whatsapp_phone: data.whatsapp_phone?.trim()
+          ? normalizePhoneChile(data.whatsapp_phone)
+          : null,
         is_active: data.is_active,
         sort_order: data.sort_order,
       }
@@ -166,13 +175,45 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="banner-link">Enlace al hacer clic (opcional)</Label>
+        <Label htmlFor="banner-instagram">Instagram (opcional)</Label>
+        <Input
+          id="banner-instagram"
+          {...register('instagram_url')}
+          placeholder="https://www.instagram.com/cuenta"
+          inputMode="url"
+        />
+        {errors.instagram_url && (
+          <p className="text-sm text-destructive">{errors.instagram_url.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="banner-whatsapp">WhatsApp (opcional)</Label>
+        <Input
+          id="banner-whatsapp"
+          {...register('whatsapp_phone')}
+          placeholder="+56 9 1234 5678"
+          inputMode="tel"
+        />
+        <p className="text-xs text-muted-foreground">
+          Si hay Instagram o WhatsApp, al pulsar el banner se despliegan esos botones.
+        </p>
+        {errors.whatsapp_phone && (
+          <p className="text-sm text-destructive">{errors.whatsapp_phone.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="banner-link">Enlace genérico (opcional)</Label>
         <Input
           id="banner-link"
           {...register('link_url')}
           placeholder="https://ejemplo.cl"
           inputMode="url"
         />
+        <p className="text-xs text-muted-foreground">
+          Solo se usa si no hay Instagram ni WhatsApp.
+        </p>
         {errors.link_url && (
           <p className="text-sm text-destructive">{errors.link_url.message}</p>
         )}
@@ -196,7 +237,7 @@ export function BannerForm({ banner, onClose }: BannerFormProps) {
 
       <label className="flex items-center gap-2">
         <Switch checked={isActive} onCheckedChange={(v) => setValue('is_active', v)} />
-        <span className="text-sm">Activo (visible en el home)</span>
+        <span className="text-sm">Activo (visible en home y ciudades)</span>
       </label>
 
       {saveMutation.isError && (

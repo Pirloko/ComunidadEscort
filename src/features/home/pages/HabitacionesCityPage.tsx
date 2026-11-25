@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { BrandLogo } from '@/components/shared/BrandLogo'
 import { HabitacionCard } from '@/features/home/components/HabitacionCard'
+import { HomePromoBannerCarousel } from '@/features/home/components/HomePromoBannerCarousel'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { canAccessCommunity } from '@/lib/account-access'
 import { PUBLIC_HABITACIONES_PAGE_SIZE } from '@/lib/habitaciones'
@@ -161,6 +162,8 @@ export function HabitacionesCityPage() {
             </Link>
           </p>
         </header>
+
+        <HomePromoBannerCarousel />
 
         <section
           ref={listRef}
