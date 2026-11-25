@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { whatsappUrl } from '@/lib/habitaciones'
@@ -146,7 +146,6 @@ export function HomePromoBannerCarousel() {
   )
 
   const goNext = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo])
-  const goPrev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo])
 
   useEffect(() => {
     if (count <= 1 || paused || contactsOpen) return
@@ -213,47 +212,26 @@ export function HomePromoBannerCarousel() {
                 )}
               </div>
 
-              {count > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className="home-promo-nav home-promo-nav-prev"
-                    onClick={goPrev}
-                    aria-label="Banner anterior"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    className="home-promo-nav home-promo-nav-next"
-                    onClick={goNext}
-                    aria-label="Banner siguiente"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-
-                  {!contactsOpen && (
-                    <div
-                      className="carousel-dots carousel-dots--light absolute inset-x-0 bottom-0 z-[3]"
-                      role="tablist"
-                      aria-label="Seleccionar banner"
+              {count > 1 && !contactsOpen && (
+                <div
+                  className="carousel-dots carousel-dots--light absolute inset-x-0 bottom-0 z-[3]"
+                  role="tablist"
+                  aria-label="Seleccionar banner"
+                >
+                  {banners.map((banner, i) => (
+                    <button
+                      key={banner.id}
+                      type="button"
+                      role="tab"
+                      className="carousel-dot"
+                      onClick={() => goTo(i)}
+                      aria-label={`Ir al banner ${i + 1}: ${banner.title}`}
+                      aria-selected={i === activeIndex}
                     >
-                      {banners.map((banner, i) => (
-                        <button
-                          key={banner.id}
-                          type="button"
-                          role="tab"
-                          className="carousel-dot"
-                          onClick={() => goTo(i)}
-                          aria-label={`Ir al banner ${i + 1}: ${banner.title}`}
-                          aria-selected={i === activeIndex}
-                        >
-                          <span className="carousel-dot-indicator" aria-hidden="true" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
+                      <span className="carousel-dot-indicator" aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
